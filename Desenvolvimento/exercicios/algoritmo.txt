@@ -1,0 +1,11 @@
+int main()
+{
+   O congresso Conept
+   sera sediado na
+   cidade de %%Araraquara;;Campinas;;Rio Claro%%
+   no dia 19 de setembro
+   de %%2018;;1999;;2023%%.
+
+   Nao percam ! ! !
+     
+}

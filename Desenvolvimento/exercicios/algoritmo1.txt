@@ -1,0 +1,11 @@
+inicio1 %%escolha1;;escolha2;;escolha3%% fim1
+inicio2 %%escolha4;;escolha5;;escolha6%% fim2
+inicio3 %%escolha7;;escolha8;;escolha9%% fim3
+inicio4 %%escolha10;;escolha11;;escolha12%% fim4
+inicio5 %%escolha13;;escolha14;;escolha15%% fim5
+inicio6 %%escolha16;;escolha17;;escolha18%% fim6
+inicio7 %%escolha19;;escolha20;;escolha21%% fim7
+inicio8 %%escolha22;;escolha23;;escolha24%% fim8
+inicio9 %%escolha25;;escolha26;;escolha27%% fim9
+inicio10 %%escolha28;;escolha29;;escolha30%% fim10
+inicio11 %%escolha31;;escolha32;;escolha33%% fim11

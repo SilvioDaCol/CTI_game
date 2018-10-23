@@ -20,6 +20,7 @@
 
 
 ALLEGRO_DISPLAY *janela = NULL;
+ALLEGRO_DISPLAY *quadro =NULL;
 ALLEGRO_EVENT_QUEUE *fila_eventos = NULL;
 ALLEGRO_TIMER *timer = NULL;
 
@@ -216,23 +217,43 @@ int inicializar(){
         return 0;
     }
 
+    ALLEGRO_MONITOR_INFO monitor;
+    al_get_monitor_info(0, &monitor);
     al_set_new_display_flags(ALLEGRO_RESIZABLE);
-	janela = al_create_display(LARGURA_TELA, ALTURA_TELA);
 
+    quadro = al_create_display(monitor.x2-LARGURA_TELA,ALTURA_TELA);
+    if(!quadro) {
+        error_msg("Falha ao criar quadro");
+        return 0;
+    }
+    al_set_window_title(quadro, "Compilador");
+    al_set_window_position(quadro,LARGURA_TELA,monitor.y1);
+    al_clear_to_color(al_map_rgb(20,100,20));
+
+    janela = al_create_display(LARGURA_TELA, ALTURA_TELA);
     if(!janela) {
         error_msg("Falha ao criar janela");
         return 0;
     }
     al_set_window_title(janela, "Projeto Wash - CTI Renato Archer");
+    al_set_window_position(janela,monitor.x1,monitor.y1);
+
 
     //inicializa addon do teclado
-    al_install_keyboard();
+    if(!al_install_keyboard()){
+        error_msg("Falha ao inicializar teclado");
+        return 0;
+    }
 
     //inicializa addon do mouse
-    al_install_mouse();
+    if(!al_install_mouse()){
+        error_msg("Falha ao inicializar mouse");
+        return 0;
+    }
 
     // Atribui o cursor padrão do sistema para ser usado
     al_set_system_mouse_cursor(janela, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
+    al_set_system_mouse_cursor(quadro, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
 
 
     fila_eventos = al_create_event_queue();
@@ -252,6 +273,7 @@ int inicializar(){
         return 0;
     }
 
+    al_register_event_source(fila_eventos, al_get_display_event_source(quadro));
     al_register_event_source(fila_eventos, al_get_display_event_source(janela));
     al_register_event_source(fila_eventos, al_get_timer_event_source(timer));
     al_register_event_source(fila_eventos, al_get_keyboard_event_source());
@@ -262,12 +284,17 @@ int inicializar(){
 }
 
 int drawTelaJogo(Personagem *P){
+    //Coloca tela do jogo (janela) como alvo
+    al_set_target_bitmap(al_get_backbuffer(janela));
     //desenha o fundo na tela
     if(fundo.ativo)al_draw_scaled_bitmap(fundo.img,0.0,0.0, al_get_bitmap_height(fundo.img), al_get_bitmap_width(fundo.img), 0.0,0.0, (float)al_get_display_height(janela), (float)al_get_display_width(janela),0);
     //desenha sprite na posicao X Y da janela, a partir da regiao X Y da folha
     if(P->ativo)al_draw_bitmap(P->spriteImg[P->acao][P->spriteAtual], P->posicaoX+(DESLOCAMENTO/2)-(al_get_bitmap_width(P->spriteImg[P->acao][P->spriteAtual])/2), P->posicaoY-(al_get_bitmap_height(P->spriteImg[P->acao][P->spriteAtual])-DESLOCAMENTO), P->sentido);
-
-    al_draw_rectangle(rectX,rectY,rectX+90,rectY+90,al_map_rgb(255, 0, 255),6);
+    al_flip_display();
+    //Coloca tela do compilador (quadro) como alvo
+    al_set_target_bitmap(al_get_backbuffer(quadro));
+    al_clear_to_color(al_map_rgb(20,100,20));
+    al_draw_rectangle(rectX,rectY,rectX+al_get_display_width(quadro),rectY+90,al_map_rgb(255, 0, 255),6);
 
     al_flip_display();
 
@@ -501,11 +528,12 @@ void finalizar(){
     al_destroy_bitmap(fundo.img);
     al_destroy_timer(timer);
     al_destroy_display(janela);
+    al_destroy_display(quadro);
     al_destroy_event_queue(fila_eventos);
 }
 
 int main(void){
-    int desenha = 1,i=0,j;
+    int desenha = 1,i=0;
     int sair = 0;
 
     if (!inicializar()){
@@ -518,7 +546,10 @@ int main(void){
         al_wait_for_event(fila_eventos, &evento);
 
         /* -- EVENTOS -- */
+        //TIMER...
         if(evento.type == ALLEGRO_EVENT_TIMER){
+
+            // ovimentos da gato (Tela do jogo)
             if(Linha==0)acao(&cat, RUN, 6,RIGHT);
             else if(Linha==1)acao(&cat, SLIDE, 6, DOWN);
             else if(Linha==2)acao(&cat, RUN, 3, LEFT);
@@ -527,9 +558,20 @@ int main(void){
             else{
                 Linha=0;
             }
+
+            //Movimentos do Quadro
+            if(i>30){
+                i = 0;
+                rectY+=DESLOCAMENTO;
+                if(rectY>ALTURA_TELA)rectY=0;
+            }else i++;
+
+
+        //MOUSE...
         }else if (evento.type == ALLEGRO_EVENT_MOUSE_BUTTON_UP){
-            //MOUSE...
+
         }
+        //JANELAS...
         else if(evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
             sair = 1;
         }

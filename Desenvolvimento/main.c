@@ -1,12 +1,18 @@
+#include <stdio.h>
+#include <string.h>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_native_dialog.h>
 #include <allegro5/allegro_image.h>
 #include <allegro5/allegro_primitives.h>
-#include <stdio.h>
+#include <allegro5/allegro_font.h>
+#include <allegro5/allegro_ttf.h>
+
 
 #define FPS             60.0
 #define LARGURA_TELA    1000
 #define ALTURA_TELA     1000
+#define LARGURA_QUADRO  330
+#define ALTURA_QUADRO   1000
 #define RUN             0
 #define JUMP            1
 #define IDLE            2
@@ -29,6 +35,16 @@ typedef struct{ //Objetos
     int posicaoX;
     int posicaoY;
     int ativo;
+
+    ALLEGRO_FONT *font;
+    int posicaoFontX;
+    int posicaoFontY;
+    int fontAtivo;
+    char texto[200];
+    int textColour_R;
+    int textColour_G;
+    int textColour_B;
+    int tamanhoFont;
 }Objeto;
 
 typedef struct{ //Personagens
@@ -52,8 +68,12 @@ typedef struct{ //Personagens
     int ativo;
 }Personagem;
 
-Objeto fundo;
+Objeto backgroundJogo;
+Objeto backgroundQuadro;
+Objeto btnCompilar;
+Objeto btnLimpar;
 Personagem cat;
+
 int Linha = 0;
 int rectX=0;
 int rectY=0;
@@ -65,15 +85,54 @@ void error_msg(char *text){
 }
 
 int initObjetos(){
-    //carrega o fundo
-    fundo.img = al_load_bitmap("img/background.jpg");
-    if (!fundo.img){
+    //carrega o backgroundJogo
+    backgroundJogo.img = al_load_bitmap("img/background.jpg");
+    if (!backgroundJogo.img){
         return 0;
     }
-    fundo.ativo=1;
-    fundo.posicaoX=0;
-    fundo.posicaoY=0;
+    backgroundJogo.ativo=1;
+    backgroundJogo.posicaoX=0;
+    backgroundJogo.posicaoY=0;
 
+    //carrega o backgroundJogo
+    backgroundQuadro.img = al_load_bitmap("img/quadro-negro.jpg");
+    if (!backgroundQuadro.img){
+        return 0;
+    }
+    backgroundQuadro.ativo=1;
+    backgroundQuadro.posicaoX=0;
+    backgroundQuadro.posicaoY=0;
+    //Fonte do quadro
+    backgroundQuadro.tamanhoFont = 30;
+    backgroundQuadro.fontAtivo = 1;
+    backgroundQuadro.posicaoFontX = 40;
+    backgroundQuadro.posicaoFontY = 100;
+    backgroundQuadro.textColour_R = 255;
+    backgroundQuadro.textColour_G = 255;
+    backgroundQuadro.textColour_B = 255;
+    strcpy(backgroundQuadro.texto,"COMANDOS AQUI");
+    backgroundQuadro.font = al_load_font("fonte/alarm_clock/alarm_clock.ttf", backgroundQuadro.tamanhoFont, ALLEGRO_TTF_NO_KERNING);
+    if (!backgroundQuadro.font){
+        return 0;
+    }
+
+    //carrega o botao Compilar
+    btnCompilar.img = al_load_bitmap("img/btnCompilar.jpg");
+    if (!btnCompilar.img){
+        return 0;
+    }
+    btnCompilar.ativo=1;
+    btnCompilar.posicaoX= (LARGURA_QUADRO/3);
+    btnCompilar.posicaoY= ALTURA_QUADRO-al_get_bitmap_height(btnCompilar.img)-10;
+
+    //carrega o botao Limpar
+    btnLimpar.img = al_load_bitmap("img/btnLimpar.jpg");
+    if (!btnLimpar.img){
+        return 0;
+    }
+    btnLimpar.ativo=1;
+    btnLimpar.posicaoX= (LARGURA_QUADRO/3)*2;
+    btnLimpar.posicaoY= ALTURA_QUADRO-al_get_bitmap_height(btnLimpar.img)-10;
 
     return 1;
 }
@@ -205,6 +264,14 @@ int inicializar(){
         return 0;
     }
 
+    //Funcao nao retorna valor (void)
+    al_init_font_addon();
+
+    if (!al_init_ttf_addon()){
+        error_msg("Falha ao inicializar o addon de ttf");
+        return 0;
+    }
+
     if (!al_init_primitives_addon())
     {
         error_msg("Falha ao inicializar add-on de primitivas.\n");
@@ -221,7 +288,7 @@ int inicializar(){
     al_get_monitor_info(0, &monitor);
     al_set_new_display_flags(ALLEGRO_RESIZABLE);
 
-    quadro = al_create_display(monitor.x2-LARGURA_TELA,ALTURA_TELA);
+    quadro = al_create_display(LARGURA_QUADRO,ALTURA_QUADRO);
     if(!quadro) {
         error_msg("Falha ao criar quadro");
         return 0;
@@ -284,16 +351,22 @@ int inicializar(){
 }
 
 int drawTelaJogo(Personagem *P){
-    //Coloca tela do jogo (janela) como alvo
+    //Coloca tela do jogo (janela) como alvo  **********************************************
     al_set_target_bitmap(al_get_backbuffer(janela));
-    //desenha o fundo na tela
-    if(fundo.ativo)al_draw_scaled_bitmap(fundo.img,0.0,0.0, al_get_bitmap_height(fundo.img), al_get_bitmap_width(fundo.img), 0.0,0.0, (float)al_get_display_height(janela), (float)al_get_display_width(janela),0);
+    //desenha o backgroundJogo na tela
+    if(backgroundJogo.ativo)al_draw_scaled_bitmap(backgroundJogo.img,0.0,0.0, al_get_bitmap_height(backgroundJogo.img), al_get_bitmap_width(backgroundJogo.img), 0.0,0.0, (float)al_get_display_height(janela), (float)al_get_display_width(janela),0);
     //desenha sprite na posicao X Y da janela, a partir da regiao X Y da folha
     if(P->ativo)al_draw_bitmap(P->spriteImg[P->acao][P->spriteAtual], P->posicaoX+(DESLOCAMENTO/2)-(al_get_bitmap_width(P->spriteImg[P->acao][P->spriteAtual])/2), P->posicaoY-(al_get_bitmap_height(P->spriteImg[P->acao][P->spriteAtual])-DESLOCAMENTO), P->sentido);
     al_flip_display();
-    //Coloca tela do compilador (quadro) como alvo
+
+
+    //Coloca tela do compilador (quadro) como alvo **********************************************
     al_set_target_bitmap(al_get_backbuffer(quadro));
     al_clear_to_color(al_map_rgb(20,100,20));
+    al_draw_scaled_bitmap(backgroundQuadro.img,0.0,0.0,al_get_bitmap_width(backgroundQuadro.img), al_get_bitmap_height(backgroundQuadro.img), 0.0,0.0, (float)al_get_display_width(quadro), (float)al_get_display_height(quadro),0);
+    al_draw_textf(backgroundQuadro.font,al_map_rgb(backgroundQuadro.textColour_R,backgroundQuadro.textColour_G,backgroundQuadro.textColour_B),backgroundQuadro.posicaoFontX,backgroundQuadro.posicaoFontY,0,backgroundQuadro.texto);
+    al_draw_bitmap(btnCompilar.img,btnCompilar.posicaoX,btnCompilar.posicaoY,0);
+    al_draw_bitmap(btnLimpar.img,btnLimpar.posicaoX,btnLimpar.posicaoY,0);
     al_draw_rectangle(rectX,rectY,rectX+al_get_display_width(quadro),rectY+90,al_map_rgb(255, 0, 255),6);
 
     al_flip_display();
@@ -525,7 +598,7 @@ void finalizar(){
             al_destroy_bitmap(cat.spriteImg[i][j]);
         }
     }
-    al_destroy_bitmap(fundo.img);
+    al_destroy_bitmap(backgroundJogo.img);
     al_destroy_timer(timer);
     al_destroy_display(janela);
     al_destroy_display(quadro);
@@ -548,8 +621,7 @@ int main(void){
         /* -- EVENTOS -- */
         //TIMER...
         if(evento.type == ALLEGRO_EVENT_TIMER){
-
-            // ovimentos da gato (Tela do jogo)
+                            // Movimentos da gato (Tela do jogo)
             if(Linha==0)acao(&cat, RUN, 6,RIGHT);
             else if(Linha==1)acao(&cat, SLIDE, 6, DOWN);
             else if(Linha==2)acao(&cat, RUN, 3, LEFT);
@@ -565,7 +637,6 @@ int main(void){
                 rectY+=DESLOCAMENTO;
                 if(rectY>ALTURA_TELA)rectY=0;
             }else i++;
-
 
         //MOUSE...
         }else if (evento.type == ALLEGRO_EVENT_MOUSE_BUTTON_UP){

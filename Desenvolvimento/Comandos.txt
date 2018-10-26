@@ -1,15 +1,32 @@
 
+********* /COMANDOS SIMPLES:/ ********* 
+
 ANDA(DIRECAO);
 
-ANDA(REPETE, DIRECAO);
-
-PULA();
+PULA(DIRECAO);
 
 ABRE();
 
-SE(CHAVE = VERDADEIRO)
-  PEGA-CHAVE();
 
+
+********* / REPETICAO: / ********* 
+
+REPETE (x VEZES)
+{
+  ANDA(DIRECAO);
+}
+
+
+
+********* / CONDICIONAL: / ********* 
+
+SE(CHAVE == VERDADEIRO)
+{
+  PEGA(CHAVE);
+}
+-------------------
 SE(BANANA = VERDADEIRO)
+{
   PULA();
-
+}
+-------------------

@@ -7,17 +7,23 @@
 #include <allegro5/allegro_font.h>
 #include <allegro5/allegro_ttf.h>
 
-
+//Parametros gerais
 #define FPS             60.0
 #define LARGURA_TELA    1000
 #define ALTURA_TELA     1000
 #define LARGURA_QUADRO  330
 #define ALTURA_QUADRO   1000
+//Comandos (Instrucoes disponiveis):
 #define RUN             0
 #define JUMP            1
 #define IDLE            2
 #define DEAD            3
 #define SLIDE           4
+#define PEGA            5
+#define ABRE            6
+#define CONDICIONAL_SE  7
+#define REPETICAO       8
+//Parametros para instrucoes:
 #define LEFT            0
 #define RIGHT           1
 #define UP              2
@@ -84,9 +90,21 @@ typedef struct{ //InputDevice
     char cursor;
     int cursorAtivo;
     char codASCII;
+    int posicaoX;
+    int posicaoY;
+    int click;
+    int ajusteX;
+    int ajusteY;
 }InputDevice;
 
-/* PERSONAGENS E OBJETOS ------------------------------------*/
+typedef struct{//InstrucaoPadrao
+    Personagem *P;
+    int comando;
+    int direcao;
+    int iteracao;
+}InstrucaoPadrao;
+
+/* PERSONAGENS, OBJETOS, INPUT DEVICES E VETOR DE INSTRUCAO ------------------------------------*/
 Objeto backgroundJogo;
 Objeto backgroundQuadro;
 Objeto marcador;
@@ -94,11 +112,13 @@ Objeto btnCompilar;
 Objeto btnLimpar;
 Personagem cat;
 InputDevice teclado;
+InputDevice mouse;
+InstrucaoPadrao vetorInstrucao[30];
 
 /* VARIAVEIS GLOBAIS ------------------------------------*/
 int Linha = 0;
 char txtAlgoritmo[QTDE_LIN_ALGO][TAM_LIN_ALGO+1];
-int linhaAlgoritmo=0, colunaAlgoritmo=0;
+int linhaAlgoritmo=0, colunaAlgoritmo=0, nInstrucao = 0;
 
 void error_msg(char *text){
 	al_show_native_message_box(janela,"ERRO",
@@ -165,13 +185,20 @@ int initObjetos(){
     //Inicializacao teclado
     teclado.backSpace=0;
     teclado.caracterPendente=0;
-    teclado.codASCII=NULL;
+    teclado.codASCII='\0';
     teclado.enter=0;
     teclado.espaco=0;
     teclado.tab=0;
     teclado.teclaPress=0;
     teclado.cont=0;
     teclado.cursor='_';
+
+    //Inicializacao mouse
+    mouse.posicaoX = 0;
+    mouse.posicaoY = 0;
+    mouse.click = 0;
+    mouse.ajusteX = LARGURA_QUADRO;
+    mouse.ajusteY = ALTURA_QUADRO;
 
     return 1;
 }
@@ -326,6 +353,7 @@ int inicializar(){
     ALLEGRO_MONITOR_INFO monitor;
     al_get_monitor_info(0, &monitor);
     al_set_new_display_flags(ALLEGRO_RESIZABLE);
+
 
     quadro = al_create_display(LARGURA_QUADRO,ALTURA_QUADRO);
     if(!quadro) {
@@ -679,7 +707,6 @@ void tratamentoTeclado(){
             }
 
             teclado.caracterPendente=0;
-            //al_show_native_message_box(janela,"TECLADO!!","TECLADO","TECLADO",NULL,ALLEGRO_MESSAGEBOX_OK_CANCEL);
         }else{//---------------------------------Se foi tecla de comando
 
             if(teclado.codASCII==8){ //BAKSPACE
@@ -707,19 +734,80 @@ void tratamentoTeclado(){
     }
 }
 
+void ajustaPosMouse(int mouseX, int mouseY){
+    float difX = (float)mouse.ajusteX/(float)LARGURA_QUADRO;
+    float difY = (float)mouse.ajusteY/(float)ALTURA_QUADRO;
+    mouse.posicaoX = (int)((float)mouseX/difX);
+    mouse.posicaoY = (int)((float)mouseY/difY);
+}
+
+int mousePosicao(Objeto botao){
+    int posicao=0;
+    if((mouse.posicaoX>=botao.posicaoX)&&(mouse.posicaoX<=(botao.posicaoX + al_get_bitmap_width(botao.img)))){
+        if((mouse.posicaoY>=botao.posicaoY)&&(mouse.posicaoY<=(botao.posicaoY + al_get_bitmap_height(botao.img)))){
+            posicao=1;
+        }else{
+            posicao=0;
+        }
+    }else{
+        posicao=0;
+    }
+    return posicao;
+}
+
+int mouseClick(Objeto botao){
+    int click=0;
+    if(mouse.click){
+        if((mouse.posicaoX>=botao.posicaoX)&&(mouse.posicaoX<=(botao.posicaoX + al_get_bitmap_width(botao.img)))){
+            if((mouse.posicaoY>=botao.posicaoY)&&(mouse.posicaoY<=(botao.posicaoY + al_get_bitmap_height(botao.img)))){
+                click=1;
+                mouse.click=0;
+            }else{
+                click=0;
+            }
+        }else{
+            click=0;
+        }
+    }
+    return click;
+}
+
+void processadorInstrucao(InstrucaoPadrao instrucao){
+    switch(instrucao.comando){
+    case RUN:
+        acao(instrucao.P, RUN, instrucao.iteracao, instrucao.direcao);
+        break;
+    case JUMP:
+        acao(instrucao.P, JUMP, instrucao.iteracao, instrucao.direcao);
+        break;
+    case IDLE:
+        acao(instrucao.P, IDLE, instrucao.iteracao, instrucao.direcao);
+        break;
+    case DEAD:
+        acao(instrucao.P, DEAD, instrucao.iteracao, instrucao.direcao);
+        break;
+    case SLIDE:
+        acao(instrucao.P, SLIDE, instrucao.iteracao, instrucao.direcao);
+        break;
+    case PEGA:
+        break;
+    case ABRE:
+        break;
+    case CONDICIONAL_SE:
+        break;
+    case REPETICAO:
+        break;
+    }
+}
+
 void telaJogo(){
-    // Movimentos da gato (Tela do jogo)
-    if(Linha==0)acao(&cat, RUN, 6,RIGHT);
-    else if(Linha==1)acao(&cat, SLIDE, 6, DOWN);
-    else if(Linha==2)acao(&cat, RUN, 3, LEFT);
-    else if(Linha==3)acao(&cat, SLIDE, 3, LEFT);
-    else if(Linha==4)acao(&cat, RUN, 6, UP);
-    else{
-        Linha=0;
+    if(Linha<nInstrucao){
+        processadorInstrucao(vetorInstrucao[Linha]);
     }
 }
 
 void telaQuadro(){
+    int i,j;
     //Movimentos do Quadro
     if(marcador.contador>marcador.velocidade){
         marcador.contador = 0;
@@ -728,23 +816,67 @@ void telaQuadro(){
     }else marcador.contador++;
 
     tratamentoTeclado();
+
+    if(mouseClick(btnCompilar)){
+        Linha=0;
+        nInstrucao=3;
+        vetorInstrucao[0].comando=RUN;
+        vetorInstrucao[0].direcao=RIGHT;
+        vetorInstrucao[0].iteracao=6;
+        vetorInstrucao[0].P=&cat;
+
+        vetorInstrucao[1].comando=SLIDE;
+        vetorInstrucao[1].direcao=DOWN;
+        vetorInstrucao[1].iteracao=6;
+        vetorInstrucao[1].P=&cat;
+
+        vetorInstrucao[2].comando=RUN;
+        vetorInstrucao[2].direcao=LEFT;
+        vetorInstrucao[2].iteracao=6;
+        vetorInstrucao[2].P=&cat;
+    }
+
+    if(mouseClick(btnLimpar)&&(al_show_native_message_box(quadro,"ATENCAO!!",
+		"DESEJA MESMO APAGRA TODO O CODIGO?",
+		"",NULL,ALLEGRO_MESSAGEBOX_OK_CANCEL))){
+        for(i=0;i<QTDE_LIN_ALGO;i++){
+            for(j=0;j<TAM_LIN_ALGO;j++){
+                txtAlgoritmo[i][j]='\0';
+            }
+        }
+        linhaAlgoritmo=0;
+        colunaAlgoritmo=0;
+    }
+
+
+
+    if(mousePosicao(btnCompilar)){
+        btnCompilar.img = al_load_bitmap("img/btnCompilarInverso.png");
+    }else btnCompilar.img = al_load_bitmap("img/btnCompilar.png");
+
+    if(mousePosicao(btnLimpar)){
+        btnLimpar.img = al_load_bitmap("img/btnLimparInverso.png");
+    }else btnLimpar.img = al_load_bitmap("img/btnLimpar.png");
 }
 
 int main(void){
-    int desenha = 1,i;
+    int desenha = 1,i,j;
     int sair = 0;
-    char c[10];
 
     if (!inicializar()){
         finalizar();
         return -1;
     }
 
-    for(i=0;i<QTDE_LIN_ALGO;i++){
-        itoa(i, c, 10);
-        strcpy(&txtAlgoritmo[i][0],"");
-        //strcat(&txtAlgoritmo[i][0], c);
+    if(mouseClick(btnLimpar)){
+        for(i=0;i<QTDE_LIN_ALGO;i++){
+            for(j=0;j<TAM_LIN_ALGO;j++){
+                txtAlgoritmo[i][j]='\0';
+            }
+        }
     }
+    linhaAlgoritmo=0;
+    colunaAlgoritmo=0;
 
     while(!sair){
         ALLEGRO_EVENT evento;
@@ -756,11 +888,17 @@ int main(void){
             telaJogo();
             telaQuadro();
         }
-        //MOUSE...
+        //MOUSE CLICK...
         else if (evento.type == ALLEGRO_EVENT_MOUSE_BUTTON_UP){
+            mouse.click=1;
+            ajustaPosMouse(evento.mouse.x, evento.mouse.y);
+        }
+        //MOUSE AXES...
+        else if (evento.type == ALLEGRO_EVENT_MOUSE_AXES){
+            ajustaPosMouse(evento.mouse.x, evento.mouse.y);
         }
         //TECLADO...
-        if (evento.type == ALLEGRO_EVENT_KEY_CHAR){
+        else if (evento.type == ALLEGRO_EVENT_KEY_CHAR){
             teclado.codASCII = (char)evento.keyboard.unichar;
             if((teclado.codASCII >= 97)&&(teclado.codASCII <= 122))teclado.codASCII-=32;
             if((teclado.codASCII >= 32)&&(teclado.codASCII <= 126)){
@@ -774,6 +912,9 @@ int main(void){
         //JANELAS...
         else if(evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
             sair = 1;
+        }else if(evento.type == ALLEGRO_EVENT_DISPLAY_RESIZE){
+            mouse.ajusteX =  (float)(evento.display.width);
+            mouse.ajusteY =  (float)(evento.display.height);
         }
         /* -- ATUALIZA TELA -- */
         desenha=1;

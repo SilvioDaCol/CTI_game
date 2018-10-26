@@ -22,8 +22,10 @@
 #define RIGHT           1
 #define UP              2
 #define DOWN            3
-#define DESLOCAMENTO    91 // = TELA(1000) / NUMERO DE QUADRADOS (11) / 10(NUMERO DE PASSOS)
-
+#define DESLOCAMENTO    91 // = TELA(1000) / NUMERO DE QUADRADOS (11)
+#define QTDE_LIN_ALGO   10
+#define TAM_LIN_ALGO    16
+#define ESPACAMENTO_LIN 15
 
 ALLEGRO_DISPLAY *janela = NULL;
 ALLEGRO_DISPLAY *quadro =NULL;
@@ -31,11 +33,14 @@ ALLEGRO_EVENT_QUEUE *fila_eventos = NULL;
 ALLEGRO_TIMER *timer = NULL;
 
 typedef struct{ //Objetos
+    //Caraceristicas do Objeto
     ALLEGRO_BITMAP *img;
     int posicaoX;
     int posicaoY;
+    int contador;
+    int velocidade;
     int ativo;
-
+    //Fonte(Texto) do Objeto
     ALLEGRO_FONT *font;
     int posicaoFontX;
     int posicaoFontY;
@@ -68,15 +73,32 @@ typedef struct{ //Personagens
     int ativo;
 }Personagem;
 
+typedef struct{ //InputDevice
+    int enter;
+    int espaco;
+    int tab;
+    int backSpace;
+    int caracterPendente;
+    int teclaPress;
+    int cont;
+    char cursor;
+    int cursorAtivo;
+    char codASCII;
+}InputDevice;
+
+/* PERSONAGENS E OBJETOS ------------------------------------*/
 Objeto backgroundJogo;
 Objeto backgroundQuadro;
+Objeto marcador;
 Objeto btnCompilar;
 Objeto btnLimpar;
 Personagem cat;
+InputDevice teclado;
 
+/* VARIAVEIS GLOBAIS ------------------------------------*/
 int Linha = 0;
-int rectX=0;
-int rectY=0;
+char txtAlgoritmo[QTDE_LIN_ALGO][TAM_LIN_ALGO+1];
+int linhaAlgoritmo=0, colunaAlgoritmo=0;
 
 void error_msg(char *text){
 	al_show_native_message_box(janela,"ERRO",
@@ -105,16 +127,22 @@ int initObjetos(){
     //Fonte do quadro
     backgroundQuadro.tamanhoFont = 30;
     backgroundQuadro.fontAtivo = 1;
-    backgroundQuadro.posicaoFontX = 40;
+    backgroundQuadro.posicaoFontX = 25;
     backgroundQuadro.posicaoFontY = 100;
     backgroundQuadro.textColour_R = 255;
     backgroundQuadro.textColour_G = 255;
     backgroundQuadro.textColour_B = 255;
-    strcpy(backgroundQuadro.texto,"COMANDOS AQUI");
+    strcpy(backgroundQuadro.texto,"COMANDOS AQUI:");
     backgroundQuadro.font = al_load_font("fonte/alarm_clock/alarm_clock.ttf", backgroundQuadro.tamanhoFont, ALLEGRO_TTF_NO_KERNING);
     if (!backgroundQuadro.font){
         return 0;
     }
+
+    //carrega marcador
+    marcador.ativo = 1;
+    marcador.posicaoX = 0;
+    marcador.posicaoY = backgroundQuadro.posicaoFontY-5;
+    marcador.velocidade = 30;
 
     //carrega o botao Compilar
     btnCompilar.img = al_load_bitmap("img/btnCompilar.png");
@@ -133,6 +161,17 @@ int initObjetos(){
     btnLimpar.ativo=1;
     btnLimpar.posicaoX= (LARGURA_QUADRO/3)*2;
     btnLimpar.posicaoY= ALTURA_QUADRO-al_get_bitmap_height(btnLimpar.img)-10;
+
+    //Inicializacao teclado
+    teclado.backSpace=0;
+    teclado.caracterPendente=0;
+    teclado.codASCII=NULL;
+    teclado.enter=0;
+    teclado.espaco=0;
+    teclado.tab=0;
+    teclado.teclaPress=0;
+    teclado.cont=0;
+    teclado.cursor='_';
 
     return 1;
 }
@@ -295,7 +334,6 @@ int inicializar(){
     }
     al_set_window_title(quadro, "Compilador");
     al_set_window_position(quadro,LARGURA_TELA,monitor.y1);
-    al_clear_to_color(al_map_rgb(20,100,20));
 
     janela = al_create_display(LARGURA_TELA, ALTURA_TELA);
     if(!janela) {
@@ -351,6 +389,7 @@ int inicializar(){
 }
 
 int drawTelaJogo(Personagem *P){
+    int i;
     //Coloca tela do jogo (janela) como alvo  **********************************************
     al_set_target_bitmap(al_get_backbuffer(janela));
     //desenha o backgroundJogo na tela
@@ -362,12 +401,17 @@ int drawTelaJogo(Personagem *P){
 
     //Coloca tela do compilador (quadro) como alvo **********************************************
     al_set_target_bitmap(al_get_backbuffer(quadro));
-    al_clear_to_color(al_map_rgb(20,100,20));
-    al_draw_scaled_bitmap(backgroundQuadro.img,0.0,0.0,al_get_bitmap_width(backgroundQuadro.img), al_get_bitmap_height(backgroundQuadro.img), 0.0,0.0, (float)al_get_display_width(quadro), (float)al_get_display_height(quadro),0);
-    al_draw_textf(backgroundQuadro.font,al_map_rgb(backgroundQuadro.textColour_R,backgroundQuadro.textColour_G,backgroundQuadro.textColour_B),backgroundQuadro.posicaoFontX,backgroundQuadro.posicaoFontY,0,backgroundQuadro.texto);
-    al_draw_bitmap(btnCompilar.img,btnCompilar.posicaoX,btnCompilar.posicaoY,0);
-    al_draw_bitmap(btnLimpar.img,btnLimpar.posicaoX,btnLimpar.posicaoY,0);
-    al_draw_rectangle(rectX,rectY,rectX+al_get_display_width(quadro),rectY+90,al_map_rgb(255, 0, 255),6);
+    //al_clear_to_color(al_map_rgb(20,100,20));
+    if(backgroundQuadro.ativo)al_draw_scaled_bitmap(backgroundQuadro.img,0.0,0.0,al_get_bitmap_width(backgroundQuadro.img), al_get_bitmap_height(backgroundQuadro.img), 0.0,0.0, (float)al_get_display_width(quadro), (float)al_get_display_height(quadro),0);
+    if(backgroundQuadro.fontAtivo){
+        for(i=0;i<QTDE_LIN_ALGO;i++){
+            al_draw_textf(backgroundQuadro.font,al_map_rgb(backgroundQuadro.textColour_R,backgroundQuadro.textColour_G,backgroundQuadro.textColour_B),backgroundQuadro.posicaoFontX,(backgroundQuadro.posicaoFontY)+(backgroundQuadro.tamanhoFont*i)+(ESPACAMENTO_LIN*i),0,&txtAlgoritmo[i][0]);
+        }
+    }
+    if(btnCompilar.ativo)al_draw_bitmap(btnCompilar.img,btnCompilar.posicaoX,btnCompilar.posicaoY,0);
+    if(btnLimpar.ativo)al_draw_bitmap(btnLimpar.img,btnLimpar.posicaoX,btnLimpar.posicaoY,0);
+    //marcador
+    if(marcador.ativo)al_draw_rectangle(marcador.posicaoX,marcador.posicaoY,marcador.posicaoX+al_get_display_width(quadro),marcador.posicaoY+backgroundQuadro.tamanhoFont+10,al_map_rgb(20, 255, 20),6);
 
     al_flip_display();
 
@@ -605,13 +649,101 @@ void finalizar(){
     al_destroy_event_queue(fila_eventos);
 }
 
+void tratamentoTeclado(){
+
+    if(teclado.cont>10){//----------------------Tratamento do cursor (Piscante)
+        teclado.cont=0;
+        if(teclado.cursorAtivo){
+            txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo] = ' ';
+            teclado.cursorAtivo=0;
+        }else {
+            txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo]= teclado.cursor;
+            teclado.cursorAtivo=1;
+        }
+    }else teclado.cont++;
+
+    if(teclado.teclaPress){//---------------Se alguma tecla foi pressionada
+        if(teclado.caracterPendente){//----------Se foi caracter
+            //Escreve caractere
+            txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo] = teclado.codASCII;
+            txtAlgoritmo[linhaAlgoritmo][TAM_LIN_ALGO] = '\0';
+            //Incrementa posicao para proxima escrita
+            colunaAlgoritmo++;
+            if(colunaAlgoritmo>=TAM_LIN_ALGO){
+                colunaAlgoritmo=0;
+                linhaAlgoritmo++;
+                if(linhaAlgoritmo>=QTDE_LIN_ALGO){
+                    linhaAlgoritmo=QTDE_LIN_ALGO-1;
+                    colunaAlgoritmo=TAM_LIN_ALGO;
+                }
+            }
+
+            teclado.caracterPendente=0;
+            //al_show_native_message_box(janela,"TECLADO!!","TECLADO","TECLADO",NULL,ALLEGRO_MESSAGEBOX_OK_CANCEL);
+        }else{//---------------------------------Se foi tecla de comando
+
+            if(teclado.codASCII==8){ //BAKSPACE
+                txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo] = ' ';//apaga cursor
+                colunaAlgoritmo--;
+                if(colunaAlgoritmo<0){
+                    linhaAlgoritmo--;
+                    colunaAlgoritmo=TAM_LIN_ALGO-1;
+                    if(linhaAlgoritmo<0){
+                        linhaAlgoritmo=0;
+                        colunaAlgoritmo=0;
+                    }
+                }
+                txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo]= ' ';
+            }else if(teclado.codASCII==13){//ENTER
+                txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo] = ' ';//apaga cursor
+                if(linhaAlgoritmo<QTDE_LIN_ALGO-1){
+                    linhaAlgoritmo++;
+                    colunaAlgoritmo=0;
+                }
+            }
+        }
+
+        teclado.teclaPress=0;
+    }
+}
+
+void telaJogo(){
+    // Movimentos da gato (Tela do jogo)
+    if(Linha==0)acao(&cat, RUN, 6,RIGHT);
+    else if(Linha==1)acao(&cat, SLIDE, 6, DOWN);
+    else if(Linha==2)acao(&cat, RUN, 3, LEFT);
+    else if(Linha==3)acao(&cat, SLIDE, 3, LEFT);
+    else if(Linha==4)acao(&cat, RUN, 6, UP);
+    else{
+        Linha=0;
+    }
+}
+
+void telaQuadro(){
+    //Movimentos do Quadro
+    if(marcador.contador>marcador.velocidade){
+        marcador.contador = 0;
+        marcador.posicaoY+=backgroundQuadro.tamanhoFont+ESPACAMENTO_LIN;
+        if(marcador.posicaoY>ALTURA_TELA-100)marcador.posicaoY=backgroundQuadro.posicaoFontY-5;
+    }else marcador.contador++;
+
+    tratamentoTeclado();
+}
+
 int main(void){
-    int desenha = 1,i=0;
+    int desenha = 1,i;
     int sair = 0;
+    char c[10];
 
     if (!inicializar()){
         finalizar();
         return -1;
+    }
+
+    for(i=0;i<QTDE_LIN_ALGO;i++){
+        itoa(i, c, 10);
+        strcpy(&txtAlgoritmo[i][0],"");
+        //strcat(&txtAlgoritmo[i][0], c);
     }
 
     while(!sair){
@@ -621,32 +753,28 @@ int main(void){
         /* -- EVENTOS -- */
         //TIMER...
         if(evento.type == ALLEGRO_EVENT_TIMER){
-                            // Movimentos da gato (Tela do jogo)
-            if(Linha==0)acao(&cat, RUN, 6,RIGHT);
-            else if(Linha==1)acao(&cat, SLIDE, 6, DOWN);
-            else if(Linha==2)acao(&cat, RUN, 3, LEFT);
-            else if(Linha==3)acao(&cat, SLIDE, 3, LEFT);
-            else if(Linha==4)acao(&cat, RUN, 6, UP);
-            else{
-                Linha=0;
-            }
-
-            //Movimentos do Quadro
-            if(i>30){
-                i = 0;
-                rectY+=DESLOCAMENTO;
-                if(rectY>ALTURA_TELA)rectY=0;
-            }else i++;
-
+            telaJogo();
+            telaQuadro();
+        }
         //MOUSE...
-        }else if (evento.type == ALLEGRO_EVENT_MOUSE_BUTTON_UP){
+        else if (evento.type == ALLEGRO_EVENT_MOUSE_BUTTON_UP){
+        }
+        //TECLADO...
+        if (evento.type == ALLEGRO_EVENT_KEY_CHAR){
+            teclado.codASCII = (char)evento.keyboard.unichar;
+            if((teclado.codASCII >= 97)&&(teclado.codASCII <= 122))teclado.codASCII-=32;
+            if((teclado.codASCII >= 32)&&(teclado.codASCII <= 126)){
+                teclado.caracterPendente = 1;
+                teclado.teclaPress = 1;
+            }else if((teclado.codASCII == 8)||(teclado.codASCII == 13)){
+                teclado.teclaPress=1;
+            }
 
         }
         //JANELAS...
         else if(evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
             sair = 1;
         }
-
         /* -- ATUALIZA TELA -- */
         desenha=1;
         if(desenha && al_is_event_queue_empty(fila_eventos)) {

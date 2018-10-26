@@ -116,9 +116,13 @@ InputDevice mouse;
 InstrucaoPadrao vetorInstrucao[30];
 
 /* VARIAVEIS GLOBAIS ------------------------------------*/
-int Linha = 0;
+//Variaveis para processamento de instrucoes:
+int Linha = 0; // Indice do vetor de Instrucoes
+int nInstrucao = 0; //Qtde de instrucoes
+
+//texto do Quadro Negro
 char txtAlgoritmo[QTDE_LIN_ALGO][TAM_LIN_ALGO+1];
-int linhaAlgoritmo=0, colunaAlgoritmo=0, nInstrucao = 0;
+int linhaAlgoritmo=0, colunaAlgoritmo=0; //Indices do texto
 
 void error_msg(char *text){
 	al_show_native_message_box(janela,"ERRO",
@@ -159,9 +163,9 @@ int initObjetos(){
     }
 
     //carrega marcador
-    marcador.ativo = 1;
+    marcador.ativo = 0;
     marcador.posicaoX = 0;
-    marcador.posicaoY = backgroundQuadro.posicaoFontY-5;
+    marcador.posicaoY = backgroundQuadro.posicaoFontY;
     marcador.velocidade = 30;
 
     //carrega o botao Compilar
@@ -324,7 +328,6 @@ int inicializar(){
         error_msg("Falha ao inicializar a Allegro");
         return 0;
     }
-
     if (!al_init_image_addon()){
         error_msg("Falha ao inicializar o addon de imagens");
         return 0;
@@ -433,13 +436,18 @@ int drawTelaJogo(Personagem *P){
     if(backgroundQuadro.ativo)al_draw_scaled_bitmap(backgroundQuadro.img,0.0,0.0,al_get_bitmap_width(backgroundQuadro.img), al_get_bitmap_height(backgroundQuadro.img), 0.0,0.0, (float)al_get_display_width(quadro), (float)al_get_display_height(quadro),0);
     if(backgroundQuadro.fontAtivo){
         for(i=0;i<QTDE_LIN_ALGO;i++){
-            al_draw_textf(backgroundQuadro.font,al_map_rgb(backgroundQuadro.textColour_R,backgroundQuadro.textColour_G,backgroundQuadro.textColour_B),backgroundQuadro.posicaoFontX,(backgroundQuadro.posicaoFontY)+(backgroundQuadro.tamanhoFont*i)+(ESPACAMENTO_LIN*i),0,&txtAlgoritmo[i][0]);
+            al_draw_textf(backgroundQuadro.font,
+                          al_map_rgb(backgroundQuadro.textColour_R,backgroundQuadro.textColour_G,backgroundQuadro.textColour_B),
+                          backgroundQuadro.posicaoFontX,
+                          (backgroundQuadro.posicaoFontY)+(backgroundQuadro.tamanhoFont*i)+(ESPACAMENTO_LIN*i),
+                          0,
+                          &txtAlgoritmo[i][0]);
         }
     }
     if(btnCompilar.ativo)al_draw_bitmap(btnCompilar.img,btnCompilar.posicaoX,btnCompilar.posicaoY,0);
     if(btnLimpar.ativo)al_draw_bitmap(btnLimpar.img,btnLimpar.posicaoX,btnLimpar.posicaoY,0);
     //marcador
-    if(marcador.ativo)al_draw_rectangle(marcador.posicaoX,marcador.posicaoY,marcador.posicaoX+al_get_display_width(quadro),marcador.posicaoY+backgroundQuadro.tamanhoFont+10,al_map_rgb(20, 255, 20),6);
+    if(marcador.ativo)al_draw_rectangle(marcador.posicaoX,marcador.posicaoY-10,marcador.posicaoX+al_get_display_width(quadro),marcador.posicaoY+backgroundQuadro.tamanhoFont+10,al_map_rgb(20, 255, 20),6);
 
     al_flip_display();
 
@@ -682,7 +690,7 @@ void tratamentoTeclado(){
     if(teclado.cont>10){//----------------------Tratamento do cursor (Piscante)
         teclado.cont=0;
         if(teclado.cursorAtivo){
-            txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo] = ' ';
+            txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo] = '\0';
             teclado.cursorAtivo=0;
         }else {
             txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo]= teclado.cursor;
@@ -772,6 +780,65 @@ int mouseClick(Objeto botao){
     return click;
 }
 
+int compilador(){
+    int i, linhaErro=0, inicio=255;
+    //Percorre algoritmo
+    Linha=0;
+    nInstrucao=0;
+    txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo] = '\0';
+    //Procura INICIO do codigo
+    for(i=0;i<QTDE_LIN_ALGO;i++){
+        if(strncmp(txtAlgoritmo[i],"INICIO",6)==0){
+            inicio=i+1;
+            break;
+        }
+    }
+    //Compila o algoritmo (Se inicio for encontrado)
+    for(i=inicio;i<QTDE_LIN_ALGO;i++){
+        //Finaliza busca e retorna ok caso encontrar FIM do codigo
+        if(strncmp(txtAlgoritmo[i],"FIM",3)==0){
+            linhaErro=255;
+            break;
+        }
+        linhaErro=i;
+
+        //Comado ANDA(ESQUERDA ou DIREITA) **************************************
+        if(strncmp(txtAlgoritmo[i],"ANDA(",5)==0){
+            vetorInstrucao[nInstrucao].comando=RUN;
+            vetorInstrucao[nInstrucao].iteracao=1;
+            vetorInstrucao[nInstrucao].P=&cat;
+            if(strncmp(&txtAlgoritmo[i][5],"DIREITA);",9)==0){
+                vetorInstrucao[nInstrucao].direcao=RIGHT;
+                nInstrucao++;
+                linhaErro=255;
+            }else if(strncmp(&txtAlgoritmo[i][5],"ESQUERDA);",10)==0){
+                vetorInstrucao[nInstrucao].direcao=LEFT;
+                nInstrucao++;
+                linhaErro=255;
+            }
+            else if(strncmp(&txtAlgoritmo[i][5],"CIMA);",6)==0){
+                vetorInstrucao[nInstrucao].direcao=UP;
+                nInstrucao++;
+                linhaErro=255;
+            }
+            else if(strncmp(&txtAlgoritmo[i][5],"BAIXO);",7)==0){
+                vetorInstrucao[nInstrucao].direcao=DOWN;
+                nInstrucao++;
+                linhaErro=255;
+            }
+        }// *************************************************************************
+
+
+
+        //Em caso de erro, a linhaErro tera valor diferente de 255
+        if(linhaErro!=255){
+            return linhaErro;
+        }
+    }
+    //Tudo ok, retorna linhaErro = 255
+    return linhaErro;
+}
+
 void processadorInstrucao(InstrucaoPadrao instrucao){
     switch(instrucao.comando){
     case RUN:
@@ -807,48 +874,52 @@ void telaJogo(){
 }
 
 void telaQuadro(){
-    int i,j;
-    //Movimentos do Quadro
-    if(marcador.contador>marcador.velocidade){
-        marcador.contador = 0;
-        marcador.posicaoY+=backgroundQuadro.tamanhoFont+ESPACAMENTO_LIN;
-        if(marcador.posicaoY>ALTURA_TELA-100)marcador.posicaoY=backgroundQuadro.posicaoFontY-5;
-    }else marcador.contador++;
+    int i,j,linhaErro=0;
+    char msg[20]={"ERRO NA LINHA: "},erro[5];
 
+    //Movimentos do Quadro
+    marcador.posicaoY= (backgroundQuadro.posicaoFontY)+(backgroundQuadro.tamanhoFont*(Linha+1))+(ESPACAMENTO_LIN*(Linha+1));
+
+    //Varredura teclado
     tratamentoTeclado();
 
     if(mouseClick(btnCompilar)){
-        Linha=0;
-        nInstrucao=3;
-        vetorInstrucao[0].comando=RUN;
-        vetorInstrucao[0].direcao=RIGHT;
-        vetorInstrucao[0].iteracao=6;
-        vetorInstrucao[0].P=&cat;
-
-        vetorInstrucao[1].comando=SLIDE;
-        vetorInstrucao[1].direcao=DOWN;
-        vetorInstrucao[1].iteracao=6;
-        vetorInstrucao[1].P=&cat;
-
-        vetorInstrucao[2].comando=RUN;
-        vetorInstrucao[2].direcao=LEFT;
-        vetorInstrucao[2].iteracao=6;
-        vetorInstrucao[2].P=&cat;
-    }
-
-    if(mouseClick(btnLimpar)&&(al_show_native_message_box(quadro,"ATENCAO!!",
-		"DESEJA MESMO APAGRA TODO O CODIGO?",
-		"",NULL,ALLEGRO_MESSAGEBOX_OK_CANCEL))){
-        for(i=0;i<QTDE_LIN_ALGO;i++){
-            for(j=0;j<TAM_LIN_ALGO;j++){
-                txtAlgoritmo[i][j]='\0';
-            }
+        linhaErro = compilador();
+        if(linhaErro!= 255){
+            nInstrucao=0;
+            itoa(linhaErro,erro,10);
+            strcat(msg,erro);
+            al_show_native_message_box(quadro,"ERRO DE COMPILACAO",msg,"",NULL,ALLEGRO_MESSAGEBOX_OK_CANCEL);
+        }else{
+            marcador.ativo=1;
         }
-        linhaAlgoritmo=0;
-        colunaAlgoritmo=0;
     }
 
+    if(mouseClick(btnLimpar)){
+        //reset gato
+        cat.posicaoX=180;
+        cat.posicaoY=180;
+        cat.contSprite=0;
+        cat.spriteAtual=0;
+        cat.velocidadeX=2;
+        cat.velocidadeY=2;
+        cat.velocidadeSprite=59;
+        cat.ativo=1;
+        cat.contDesloc=0;
+        cat.contBlocos=0;
 
+        marcador.ativo=0;
+
+        if(al_show_native_message_box(quadro,"ATENCAO!!","DESEJA APAGAR O CODIGO?","",NULL,ALLEGRO_MESSAGEBOX_YES_NO)){
+            for(i=0;i<QTDE_LIN_ALGO;i++){
+                for(j=0;j<TAM_LIN_ALGO;j++){
+                    txtAlgoritmo[i][j]='\0';
+                }
+            }
+            linhaAlgoritmo=0;
+            colunaAlgoritmo=0;
+        }
+    }
 
     if(mousePosicao(btnCompilar)){
         btnCompilar.img = al_load_bitmap("img/btnCompilarInverso.png");
@@ -887,6 +958,7 @@ int main(void){
         if(evento.type == ALLEGRO_EVENT_TIMER){
             telaJogo();
             telaQuadro();
+            mouse.click=0;
         }
         //MOUSE CLICK...
         else if (evento.type == ALLEGRO_EVENT_MOUSE_BUTTON_UP){

@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1540525814 source:c:\users\silvio\documents\google drive\carreira\cursos\software\curso_git\cti_game\desenvolvimento\main.c
+1540566429 source:c:\users\silvio\documents\google drive\carreira\cursos\software\curso_git\cti_game\desenvolvimento\main.c
 	<stdio.h>
 	<string.h>
 	<allegro5/allegro.h>

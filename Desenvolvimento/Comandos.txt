@@ -11,7 +11,7 @@ ABRE();
 
 ********* / REPETICAO: / ********* 
 
-REPETE (x VEZES)
+REPETE (5)
 {
   ANDA(DIRECAO);
 }
@@ -20,13 +20,13 @@ REPETE (x VEZES)
 
 ********* / CONDICIONAL: / ********* 
 
-SE(CHAVE == VERDADEIRO)
+SE(CHAVE)
 {
   PEGA(CHAVE);
 }
 -------------------
-SE(BANANA = VERDADEIRO)
+SE(BANANA = ESQUERDA)
 {
-  PULA();
+  PULA(ESQUERDA);
 }
 -------------------

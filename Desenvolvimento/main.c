@@ -29,23 +29,28 @@
 #define UP              2
 #define DOWN            3
 #define DESLOCAMENTO    91 // = TELA(1000) / NUMERO DE QUADRADOS (11)
-#define QTDE_LIN_ALGO   10
+#define QTDE_LIN_ALGO   17
 #define TAM_LIN_ALGO    16
 #define ESPACAMENTO_LIN 15
 
+#define FLOAT_TO_INT(x) ((x)>=0?(int)((x)+0.5):(int)((x)-0.5))
+
 ALLEGRO_DISPLAY *janela = NULL;
 ALLEGRO_DISPLAY *quadro =NULL;
+ALLEGRO_DISPLAY *teste =NULL;
 ALLEGRO_EVENT_QUEUE *fila_eventos = NULL;
 ALLEGRO_TIMER *timer = NULL;
 
 typedef struct{ //Objetos
     //Caraceristicas do Objeto
     ALLEGRO_BITMAP *img;
+    ALLEGRO_BITMAP *imgInverso;
     int posicaoX;
     int posicaoY;
     int contador;
     int velocidade;
     int ativo;
+    int inverso;
     //Fonte(Texto) do Objeto
     ALLEGRO_FONT *font;
     int posicaoFontX;
@@ -99,17 +104,25 @@ typedef struct{ //InputDevice
 
 typedef struct{//InstrucaoPadrao
     Personagem *P;
-    int comando;
+    int comando;//nome da instrucao
     int direcao;
     int iteracao;
+    int acao;//escorregar, correa, pular etc...
+    Objeto *objeto;
+    int contIteracao; //Utilizado para controle das REPETICOES
+    int qtdeIteracao; //Utilizado para controle das REPETICOES
+    int qtdeComandos; //Utilizado para REPETICOES e CONDICIONAIS
 }InstrucaoPadrao;
 
 /* PERSONAGENS, OBJETOS, INPUT DEVICES E VETOR DE INSTRUCAO ------------------------------------*/
 Objeto backgroundJogo;
 Objeto backgroundQuadro;
 Objeto marcador;
-Objeto btnCompilar;
+Objeto btnCompilar; //Fonte utilizada para numerar as linas do quadro
 Objeto btnLimpar;
+Objeto chave;
+Objeto banana;
+Objeto casa2;
 Personagem cat;
 InputDevice teclado;
 InputDevice mouse;
@@ -119,6 +132,9 @@ InstrucaoPadrao vetorInstrucao[30];
 //Variaveis para processamento de instrucoes:
 int Linha = 0; // Indice do vetor de Instrucoes
 int nInstrucao = 0; //Qtde de instrucoes
+int LinhaRepeticao=QTDE_LIN_ALGO+1; //armazena a localizacao da repeticao ativa
+int LinhaFimRepeticao=0; //armazena a localizacao do fim repeticao ativa
+int repeticaoAtiva=0; //Informa se repeticao ja foi satisfeita ou nao
 
 //texto do Quadro Negro
 char txtAlgoritmo[QTDE_LIN_ALGO][TAM_LIN_ALGO+1];
@@ -173,18 +189,74 @@ int initObjetos(){
     if (!btnCompilar.img){
         return 0;
     }
+    btnCompilar.imgInverso = al_load_bitmap("img/btnCompilarInverso.png");
+    if (!btnCompilar.imgInverso){
+        return 0;
+    }
     btnCompilar.ativo=1;
     btnCompilar.posicaoX= (LARGURA_QUADRO/3)-50;
     btnCompilar.posicaoY= ALTURA_QUADRO-al_get_bitmap_height(btnCompilar.img)-10;
+    //Fonte da numarecao de linhas do quadro
+    btnCompilar.tamanhoFont = 15;
+    btnCompilar.fontAtivo = 1;
+    btnCompilar.posicaoFontX = 25;
+    btnCompilar.posicaoFontY = 100;
+    btnCompilar.textColour_R = 255;   //Amarelo
+    btnCompilar.textColour_G = 255;
+    btnCompilar.textColour_B = 0;
+    strcpy(btnCompilar.texto,"COMANDOS AQUI:");
+    btnCompilar.font = al_load_font("fonte/alarm_clock/alarm_clock.ttf", btnCompilar.tamanhoFont, ALLEGRO_TTF_NO_KERNING);
+    if (!btnCompilar.font){
+        return 0;
+    }
 
     //carrega o botao Limpar
     btnLimpar.img = al_load_bitmap("img/btnLimpar.png");
     if (!btnLimpar.img){
         return 0;
     }
+    btnLimpar.imgInverso = al_load_bitmap("img/btnLimparInverso.png");
+    if (!btnLimpar.imgInverso){
+        return 0;
+    }
     btnLimpar.ativo=1;
     btnLimpar.posicaoX= (LARGURA_QUADRO/3)*2;
     btnLimpar.posicaoY= ALTURA_QUADRO-al_get_bitmap_height(btnLimpar.img)-10;
+
+    //CHAVE
+    chave.img = al_load_bitmap("img/itens/key.png");
+    if (!chave.img){
+        return 0;
+    }
+    chave.ativo=1;
+    chave.posicaoX=8*DESLOCAMENTO;
+    chave.posicaoY=8*DESLOCAMENTO;
+
+    //BANANA
+    banana.img = al_load_bitmap("img/itens/cascaBanana.png");
+    if (!banana.img){
+        return 0;
+    }
+    banana.ativo=1;
+    banana.posicaoX=5*DESLOCAMENTO;
+    banana.posicaoY=2*DESLOCAMENTO;
+
+    //CASA2
+    casa2.posicaoX=6*DESLOCAMENTO;
+    casa2.posicaoY=8*DESLOCAMENTO;
+    //Fonte da casa2
+    casa2.tamanhoFont = 30;
+    casa2.fontAtivo = 1;
+    casa2.posicaoFontX = 4*DESLOCAMENTO;
+    casa2.posicaoFontY = 9*DESLOCAMENTO+16;
+    casa2.textColour_R = 255;
+    casa2.textColour_G = 255;
+    casa2.textColour_B = 255;
+    strcpy(casa2.texto,"TRANCADA");
+    casa2.font = al_load_font("fonte/alarm_clock/alarm_clock.ttf", casa2.tamanhoFont, ALLEGRO_TTF_NO_KERNING);
+    if (!casa2.font){
+        return 0;
+    }
 
     //Inicializacao teclado
     teclado.backSpace=0;
@@ -213,19 +285,18 @@ int initPersonagens(){
         //posicao X Y da janela em que sera mostrado o sprite
     cat.acao=RUN;
     //COL1=60(X) COL2=390(X)  LIN1=35(Y) LIN2=(Y)
-    cat.posicaoX=180;
-    cat.posicaoY=180;
+    cat.posicaoX=2*DESLOCAMENTO;
+    cat.posicaoY=2*DESLOCAMENTO;
     cat.contSprite=0;
     cat.spriteAtual=0;
-    cat.velocidadeX=2;
-    cat.velocidadeY=2;
+    cat.velocidadeX=1;
+    cat.velocidadeY=1;
     cat.velocidadeSprite=59;
     cat.ativo=1;
     cat.contDesloc=0;
     cat.contBlocos=0;
 
     //carrega a folha de sprites na variavel (IDLE - CAT)
-    /*
     cat.frames_spriteIdle = 10;
     cat.spriteImg[IDLE][0] = al_load_bitmap("img/cat/Idle (1).png");
     cat.spriteImg[IDLE][1] = al_load_bitmap("img/cat/Idle (2).png");
@@ -243,7 +314,7 @@ int initPersonagens(){
             return 0;
         }
     }
-    */
+
     //carrega a folha de sprites na variavel (RUN - CAT)
     cat.frames_spriteRun = 10;
     cat.spriteImg[RUN][0] = al_load_bitmap("img/cat/Run (1).png");
@@ -425,9 +496,19 @@ int drawTelaJogo(Personagem *P){
     al_set_target_bitmap(al_get_backbuffer(janela));
     //desenha o backgroundJogo na tela
     if(backgroundJogo.ativo)al_draw_scaled_bitmap(backgroundJogo.img,0.0,0.0, al_get_bitmap_height(backgroundJogo.img), al_get_bitmap_width(backgroundJogo.img), 0.0,0.0, (float)al_get_display_height(janela), (float)al_get_display_width(janela),0);
+    if(casa2.fontAtivo) al_draw_textf(casa2.font,
+                          al_map_rgb(casa2.textColour_R,casa2.textColour_G,casa2.textColour_B),
+                          casa2.posicaoFontX,
+                          casa2.posicaoFontY,
+                          0,
+                          casa2.texto);
+    if(chave.ativo)al_draw_bitmap(chave.img,chave.posicaoX,chave.posicaoY,0);
+    if(banana.ativo)al_draw_bitmap(banana.img,banana.posicaoX+5,banana.posicaoY+7,0);
     //desenha sprite na posicao X Y da janela, a partir da regiao X Y da folha
     if(P->ativo)al_draw_bitmap(P->spriteImg[P->acao][P->spriteAtual], P->posicaoX+(DESLOCAMENTO/2)-(al_get_bitmap_width(P->spriteImg[P->acao][P->spriteAtual])/2), P->posicaoY-(al_get_bitmap_height(P->spriteImg[P->acao][P->spriteAtual])-DESLOCAMENTO), P->sentido);
+
     al_flip_display();
+
 
 
     //Coloca tela do compilador (quadro) como alvo **********************************************
@@ -435,6 +516,14 @@ int drawTelaJogo(Personagem *P){
     //al_clear_to_color(al_map_rgb(20,100,20));
     if(backgroundQuadro.ativo)al_draw_scaled_bitmap(backgroundQuadro.img,0.0,0.0,al_get_bitmap_width(backgroundQuadro.img), al_get_bitmap_height(backgroundQuadro.img), 0.0,0.0, (float)al_get_display_width(quadro), (float)al_get_display_height(quadro),0);
     if(backgroundQuadro.fontAtivo){
+        for(i=0;i<QTDE_LIN_ALGO;i++){
+            al_draw_textf(btnCompilar.font,
+                          al_map_rgb(btnCompilar.textColour_R,btnCompilar.textColour_G,btnCompilar.textColour_B),
+                          5,
+                          (backgroundQuadro.posicaoFontY)+(backgroundQuadro.tamanhoFont*i)+(ESPACAMENTO_LIN*i),
+                          0,
+                          "%i",i);
+        }
         for(i=0;i<QTDE_LIN_ALGO;i++){
             al_draw_textf(backgroundQuadro.font,
                           al_map_rgb(backgroundQuadro.textColour_R,backgroundQuadro.textColour_G,backgroundQuadro.textColour_B),
@@ -444,8 +533,10 @@ int drawTelaJogo(Personagem *P){
                           &txtAlgoritmo[i][0]);
         }
     }
-    if(btnCompilar.ativo)al_draw_bitmap(btnCompilar.img,btnCompilar.posicaoX,btnCompilar.posicaoY,0);
-    if(btnLimpar.ativo)al_draw_bitmap(btnLimpar.img,btnLimpar.posicaoX,btnLimpar.posicaoY,0);
+    if((btnCompilar.ativo)&&(btnCompilar.inverso))al_draw_bitmap(btnCompilar.imgInverso,btnCompilar.posicaoX,btnCompilar.posicaoY,0);
+    else if(btnCompilar.ativo)al_draw_bitmap(btnCompilar.img,btnCompilar.posicaoX,btnCompilar.posicaoY,0);
+    if((btnLimpar.ativo)&&(btnLimpar.inverso))al_draw_bitmap(btnLimpar.imgInverso,btnLimpar.posicaoX,btnLimpar.posicaoY,0);
+    else if(btnLimpar.ativo)al_draw_bitmap(btnLimpar.img,btnLimpar.posicaoX,btnLimpar.posicaoY,0);
     //marcador
     if(marcador.ativo)al_draw_rectangle(marcador.posicaoX,marcador.posicaoY-10,marcador.posicaoX+al_get_display_width(quadro),marcador.posicaoY+backgroundQuadro.tamanhoFont+10,al_map_rgb(20, 255, 20),6);
 
@@ -455,6 +546,7 @@ int drawTelaJogo(Personagem *P){
 }
 
 void runPersonagem(Personagem *P, int Direcao){
+    int aux;
     //Seta acao atual a ser desenhada na tela
     P->acao = RUN;
 
@@ -496,6 +588,11 @@ void runPersonagem(Personagem *P, int Direcao){
     if(P->contDesloc>=DESLOCAMENTO){
         P->contBlocos++;
         P->contDesloc=0;
+        //Alinhamento do personagem no x,y dos blocos
+        aux = FLOAT_TO_INT((float)(P->posicaoX)/(float)(DESLOCAMENTO));
+        P->posicaoX = aux * DESLOCAMENTO;
+        aux = FLOAT_TO_INT((float)(P->posicaoY)/(float)(DESLOCAMENTO));
+        P->posicaoY = aux * DESLOCAMENTO;
     }
 }
 
@@ -533,6 +630,7 @@ void idlePersonagem(Personagem *P, int Direcao){
 }
 
 void jumpPersonagem(Personagem *P, int Direcao){
+    int aux;
         //SPRITES
     P->acao = JUMP;
     if( P->contSprite > (FPS - P->velocidadeSprite) ){
@@ -566,6 +664,11 @@ void jumpPersonagem(Personagem *P, int Direcao){
     if(P->contDesloc>=DESLOCAMENTO){
         P->contBlocos++;
         P->contDesloc=0;
+        //Alinhamento do personagem no x,y dos blocos
+        aux = FLOAT_TO_INT((float)(P->posicaoX)/(float)(DESLOCAMENTO));
+        P->posicaoX = aux * DESLOCAMENTO;
+        aux = FLOAT_TO_INT((float)(P->posicaoY)/(float)(DESLOCAMENTO));
+        P->posicaoY = aux * DESLOCAMENTO;
     }
 }
 
@@ -690,10 +793,11 @@ void tratamentoTeclado(){
     if(teclado.cont>10){//----------------------Tratamento do cursor (Piscante)
         teclado.cont=0;
         if(teclado.cursorAtivo){
-            txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo] = '\0';
+            txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo] = teclado.cursor;
             teclado.cursorAtivo=0;
         }else {
-            txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo]= teclado.cursor;
+            teclado.cursor = txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo];
+            txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo]= '_';
             teclado.cursorAtivo=1;
         }
     }else teclado.cont++;
@@ -716,9 +820,8 @@ void tratamentoTeclado(){
 
             teclado.caracterPendente=0;
         }else{//---------------------------------Se foi tecla de comando
-
+            txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo]= '\0';// apaga cursor
             if(teclado.codASCII==8){ //BAKSPACE
-                txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo] = ' ';//apaga cursor
                 colunaAlgoritmo--;
                 if(colunaAlgoritmo<0){
                     linhaAlgoritmo--;
@@ -728,12 +831,12 @@ void tratamentoTeclado(){
                         colunaAlgoritmo=0;
                     }
                 }
-                txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo]= ' ';
+                txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo]= '\0'; //apaga letra na posicao atual
             }else if(teclado.codASCII==13){//ENTER
-                txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo] = ' ';//apaga cursor
+                txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo] = '\0';//apaga cursor
                 if(linhaAlgoritmo<QTDE_LIN_ALGO-1){
-                    linhaAlgoritmo++;
                     colunaAlgoritmo=0;
+                    linhaAlgoritmo++;
                 }
             }
         }
@@ -782,10 +885,14 @@ int mouseClick(Objeto botao){
 
 int compilador(){
     int i, linhaErro=0, inicio=255;
+    int ii,ok,numChavesAbertas=0,numChavesFechadas=0;
+    char aux[TAM_LIN_ALGO];
+
     //Percorre algoritmo
     Linha=0;
     nInstrucao=0;
     txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo] = '\0';
+
     //Procura INICIO do codigo
     for(i=0;i<QTDE_LIN_ALGO;i++){
         if(strncmp(txtAlgoritmo[i],"INICIO",6)==0){
@@ -793,7 +900,7 @@ int compilador(){
             break;
         }
     }
-    //Compila o algoritmo (Se inicio for encontrado)
+    //Compila o algoritmo (Se inicio foi encontrado)
     for(i=inicio;i<QTDE_LIN_ALGO;i++){
         //Finaliza busca e retorna ok caso encontrar FIM do codigo
         if(strncmp(txtAlgoritmo[i],"FIM",3)==0){
@@ -802,31 +909,98 @@ int compilador(){
         }
         linhaErro=i;
 
+        // Controle de chaves do algoritmo **************************************
+        if(strncmp(txtAlgoritmo[i],"}",1)==0){
+            numChavesFechadas++;
+
+            nInstrucao++;
+            linhaErro=255;
+        }
         //Comado ANDA(ESQUERDA ou DIREITA) **************************************
-        if(strncmp(txtAlgoritmo[i],"ANDA(",5)==0){
+        else if(strncmp(txtAlgoritmo[i],"ANDAR(",6)==0){
             vetorInstrucao[nInstrucao].comando=RUN;
             vetorInstrucao[nInstrucao].iteracao=1;
             vetorInstrucao[nInstrucao].P=&cat;
-            if(strncmp(&txtAlgoritmo[i][5],"DIREITA);",9)==0){
+            if(strncmp(&txtAlgoritmo[i][6],"DIREITA);",9)==0){
                 vetorInstrucao[nInstrucao].direcao=RIGHT;
                 nInstrucao++;
                 linhaErro=255;
-            }else if(strncmp(&txtAlgoritmo[i][5],"ESQUERDA);",10)==0){
+            }else if(strncmp(&txtAlgoritmo[i][6],"ESQUERDA);",10)==0){
                 vetorInstrucao[nInstrucao].direcao=LEFT;
                 nInstrucao++;
                 linhaErro=255;
             }
-            else if(strncmp(&txtAlgoritmo[i][5],"CIMA);",6)==0){
+            else if(strncmp(&txtAlgoritmo[i][6],"CIMA);",6)==0){
                 vetorInstrucao[nInstrucao].direcao=UP;
                 nInstrucao++;
                 linhaErro=255;
             }
-            else if(strncmp(&txtAlgoritmo[i][5],"BAIXO);",7)==0){
+            else if(strncmp(&txtAlgoritmo[i][6],"BAIXO);",7)==0){
                 vetorInstrucao[nInstrucao].direcao=DOWN;
                 nInstrucao++;
                 linhaErro=255;
             }
         }// *************************************************************************
+
+        //Comado PEGAR **************************************
+        else if(strncmp(txtAlgoritmo[i],"PEGAR();",8)==0){
+            vetorInstrucao[nInstrucao].comando=PEGA;
+            vetorInstrucao[nInstrucao].iteracao=1;
+            vetorInstrucao[nInstrucao].P=&cat;
+            vetorInstrucao[nInstrucao].acao=IDLE;
+            vetorInstrucao[nInstrucao].direcao=RIGHT;
+            vetorInstrucao[nInstrucao].objeto = &chave;
+
+            nInstrucao++;
+            linhaErro=255;
+        }
+        //Comado ABRIR **************************************
+        else if(strncmp(txtAlgoritmo[i],"ABRIR();",8)==0){
+            vetorInstrucao[nInstrucao].comando=ABRE;
+            vetorInstrucao[nInstrucao].iteracao=1;
+            vetorInstrucao[nInstrucao].P=&cat;
+            vetorInstrucao[nInstrucao].acao=IDLE;
+            vetorInstrucao[nInstrucao].direcao=RIGHT;
+            vetorInstrucao[nInstrucao].objeto = &casa2;
+
+            nInstrucao++;
+            linhaErro=255;
+        }
+
+        //Comado REPETE **************************************
+        else if(strncmp(txtAlgoritmo[i],"REPETIR(",8)==0){
+            vetorInstrucao[nInstrucao].comando=REPETICAO;
+            vetorInstrucao[nInstrucao].contIteracao=0;
+            //Leitura do valor correpondente a iteracao e Busca por "){"
+            ok=0;
+            strcpy(aux,"a");
+            for(ii=8;ii<TAM_LIN_ALGO;ii++){
+                if(strncmp(&txtAlgoritmo[i][ii],"){",2)==0){
+                    numChavesAbertas++;//Controle de chaves no algoritmo
+                    ok=1; //Encontrou "){"  e sai do laco for
+                    break;
+                }else{
+                    aux[ii-8]=txtAlgoritmo[i][ii];
+                    aux[ii-8+1]='\0';
+                }
+            }
+            //Conversao num. de iteracoes (string para int) e validacao numerica
+            vetorInstrucao[nInstrucao].qtdeIteracao = atoi(aux);
+            if(vetorInstrucao[nInstrucao].qtdeIteracao==0)ok=0;
+
+            // Computacao do numero de comandos dentro da repeticao
+            vetorInstrucao[nInstrucao].qtdeComandos=0;
+            for(ii=i+1;ii<QTDE_LIN_ALGO;ii++){
+                if(strncmp(txtAlgoritmo[ii],"}",1)==0)break;
+                vetorInstrucao[nInstrucao].qtdeComandos++;
+            }
+
+
+        if(ok){
+            nInstrucao++;
+            linhaErro=255;
+            }
+        }
 
 
 
@@ -835,41 +1009,106 @@ int compilador(){
             return linhaErro;
         }
     }
+    if(numChavesAbertas != numChavesFechadas) return 256;
+
     //Tudo ok, retorna linhaErro = 255
     return linhaErro;
 }
 
-void processadorInstrucao(InstrucaoPadrao instrucao){
-    switch(instrucao.comando){
+void processadorInstrucao(InstrucaoPadrao *instrucao){
+    switch(instrucao->comando){
     case RUN:
-        acao(instrucao.P, RUN, instrucao.iteracao, instrucao.direcao);
+        acao(instrucao->P, RUN, instrucao->iteracao, instrucao->direcao);
+        //Se for o ultimo comando dentro de uma repeticao, volta a linha da repeticao
+        //Se nao for o ultimo ou nao estiver dentro de uma repeticao, vai para proxima Linha
+        if((repeticaoAtiva)&&(Linha==LinhaFimRepeticao)){
+                Linha=LinhaRepeticao;
+        }
         break;
     case JUMP:
-        acao(instrucao.P, JUMP, instrucao.iteracao, instrucao.direcao);
+        acao(instrucao->P, JUMP, instrucao->iteracao, instrucao->direcao);
+        //Controle de repeticao
+        if((repeticaoAtiva)&&(Linha==LinhaFimRepeticao)){
+                Linha=LinhaRepeticao;
+        }
         break;
     case IDLE:
-        acao(instrucao.P, IDLE, instrucao.iteracao, instrucao.direcao);
+        acao(instrucao->P, IDLE, instrucao->iteracao, instrucao->direcao);
+        //Controle de repeticao
+        if((repeticaoAtiva)&&(Linha==LinhaFimRepeticao)){
+                Linha=LinhaRepeticao;
+        }
         break;
     case DEAD:
-        acao(instrucao.P, DEAD, instrucao.iteracao, instrucao.direcao);
+        acao(instrucao->P, DEAD, instrucao->iteracao, instrucao->direcao);
+        //Controle de repeticao
+        if((repeticaoAtiva)&&(Linha==LinhaFimRepeticao)){
+                Linha=LinhaRepeticao;
+        }
         break;
     case SLIDE:
-        acao(instrucao.P, SLIDE, instrucao.iteracao, instrucao.direcao);
+        acao(instrucao->P, SLIDE, instrucao->iteracao, instrucao->direcao);
+        //Controle de repeticao
+        if((repeticaoAtiva)&&(Linha==LinhaFimRepeticao)){
+                Linha=LinhaRepeticao;
+        }
         break;
     case PEGA:
+        acao(instrucao->P, IDLE, instrucao->iteracao, instrucao->direcao);
+        printf("\nX gato: %i   X da chave %i\nY gato %i   Y chave %i",instrucao->P->posicaoX,instrucao->objeto->posicaoX,instrucao->P->posicaoY,instrucao->objeto->posicaoY);
+        if((instrucao->P->posicaoX==instrucao->objeto->posicaoX)&&
+           (instrucao->P->posicaoY==instrucao->objeto->posicaoY)&&
+           (instrucao->P->contBlocos>=instrucao->iteracao)){
+            instrucao->objeto->posicaoX=5*DESLOCAMENTO;
+            instrucao->objeto->posicaoY=0;
+        }
+        //Controle de repeticao
+        if((repeticaoAtiva)&&(Linha==LinhaFimRepeticao)){
+                Linha=LinhaRepeticao;
+        }
         break;
     case ABRE:
+        acao(instrucao->P, IDLE, instrucao->iteracao, instrucao->direcao);
+        if((instrucao->P->posicaoX==instrucao->objeto->posicaoX)&&
+           (instrucao->P->posicaoY==instrucao->objeto->posicaoY)&&
+           (instrucao->P->contBlocos>=instrucao->iteracao)){
+            strcpy(casa2.texto,"ABERTA");
+        }
+
+        //Controle de repeticao
+        if((repeticaoAtiva)&&(Linha==LinhaFimRepeticao)){
+                Linha=LinhaRepeticao;
+        }
         break;
     case CONDICIONAL_SE:
+        //Controle de repeticao
+        if((repeticaoAtiva)&&(Linha==LinhaFimRepeticao)){
+                Linha=LinhaRepeticao;
+        }
         break;
     case REPETICAO:
+        //Atribui localizacao da repeticao (Na primeira iteracao)
+        if(instrucao->contIteracao == 0){
+                LinhaRepeticao=Linha;
+                LinhaFimRepeticao=Linha+instrucao->qtdeComandos+1;
+                repeticaoAtiva=1;
+        }
+        //Se repeticao ainda nao foi satizfeita...
+        if(instrucao->contIteracao < instrucao->qtdeIteracao){
+            instrucao->contIteracao++;
+            Linha++;
+        //Se repeticao foi satizfeita...
+        }else{
+            Linha=LinhaFimRepeticao+1;
+            repeticaoAtiva=0;
+        }
         break;
     }
 }
 
 void telaJogo(){
     if(Linha<nInstrucao){
-        processadorInstrucao(vetorInstrucao[Linha]);
+        processadorInstrucao(&vetorInstrucao[Linha]);
     }
 }
 
@@ -885,11 +1124,14 @@ void telaQuadro(){
 
     if(mouseClick(btnCompilar)){
         linhaErro = compilador();
-        if(linhaErro!= 255){
+        if(linhaErro < 255){
             nInstrucao=0;
             itoa(linhaErro,erro,10);
             strcat(msg,erro);
             al_show_native_message_box(quadro,"ERRO DE COMPILACAO",msg,"",NULL,ALLEGRO_MESSAGEBOX_OK_CANCEL);
+        }else if(linhaErro == 256){
+            nInstrucao=0;
+            al_show_native_message_box(quadro,"ERRO DE COMPILACAO","VERIFICAR CHAVES {}","",NULL,ALLEGRO_MESSAGEBOX_OK_CANCEL);
         }else{
             marcador.ativo=1;
         }
@@ -922,12 +1164,12 @@ void telaQuadro(){
     }
 
     if(mousePosicao(btnCompilar)){
-        btnCompilar.img = al_load_bitmap("img/btnCompilarInverso.png");
-    }else btnCompilar.img = al_load_bitmap("img/btnCompilar.png");
+        btnCompilar.inverso=1;
+    }else btnCompilar.inverso=0;
 
     if(mousePosicao(btnLimpar)){
-        btnLimpar.img = al_load_bitmap("img/btnLimparInverso.png");
-    }else btnLimpar.img = al_load_bitmap("img/btnLimpar.png");
+        btnLimpar.inverso=1;
+    }else btnLimpar.inverso=0;
 }
 
 int main(void){
@@ -985,8 +1227,12 @@ int main(void){
         else if(evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
             sair = 1;
         }else if(evento.type == ALLEGRO_EVENT_DISPLAY_RESIZE){
-            mouse.ajusteX =  (float)(evento.display.width);
-            mouse.ajusteY =  (float)(evento.display.height);
+
+            if(evento.display.source == quadro){
+                printf("\n%i  %i", mouse.ajusteX,mouse.ajusteY);
+                mouse.ajusteX =  (float)(evento.display.width);
+                mouse.ajusteY =  (float)(evento.display.height);
+            }
         }
         /* -- ATUALIZA TELA -- */
         desenha=1;

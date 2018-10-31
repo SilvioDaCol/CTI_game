@@ -13,6 +13,7 @@
 #define ALTURA_TELA     1000
 #define LARGURA_QUADRO  330
 #define ALTURA_QUADRO   1000
+#define TOLERANCIA      10 //colisoes
 //Comandos (Instrucoes disponiveis):
 #define RUN             0
 #define JUMP            1
@@ -47,6 +48,12 @@ typedef struct{ //Objetos
     ALLEGRO_BITMAP *imgInverso;
     int posicaoX;
     int posicaoY;
+    int xColisao;
+    int x1Colisao;
+    int yColisao;
+    int y1Colisao;
+    int largura;
+    int altura;
     int contador;
     int velocidade;
     int ativo;
@@ -76,6 +83,12 @@ typedef struct{ //Personagens
     int frames_spriteSlide;
     int posicaoX;
     int posicaoY;
+    int xColisao;
+    int x1Colisao;
+    int yColisao;
+    int y1Colisao;
+    int largura;
+    int altura;
     int velocidadeX;
     int velocidadeY;
     int sentido;
@@ -124,6 +137,15 @@ Objeto btnLimpar;
 Objeto chave;
 Objeto banana;
 Objeto casa2;
+Objeto bloco1;
+Objeto bloco2;
+Objeto bloco3;
+Objeto bloco4;
+Objeto bloco5;
+Objeto bloco6;
+Objeto bloco7;
+Objeto bloco8;
+Objeto bloco9;
 Personagem cat;
 InputDevice teclado;
 InputDevice mouse;
@@ -265,6 +287,98 @@ int initObjetos(){
         return 0;
     }
 
+    //Quarteiroes para colisao:
+    bloco1.posicaoX=0;
+    bloco1.posicaoY=0;
+    bloco1.xColisao=0;
+    bloco1.x1Colisao=0;
+    bloco1.yColisao=0;
+    bloco1.y1Colisao=0;
+    bloco1.largura=2*DESLOCAMENTO;
+    bloco1.altura=2*DESLOCAMENTO;
+    bloco1.ativo=1;
+
+    bloco2.posicaoX=3*DESLOCAMENTO;
+    bloco2.posicaoY=0;
+    bloco2.xColisao=0;
+    bloco2.x1Colisao=0;
+    bloco2.yColisao=0;
+    bloco2.y1Colisao=0;
+    bloco2.largura=5*DESLOCAMENTO;
+    bloco2.altura=2*DESLOCAMENTO;
+    bloco2.ativo=1;
+
+    bloco3.posicaoX=9*DESLOCAMENTO;
+    bloco3.posicaoY=0;
+    bloco3.xColisao=0;
+    bloco3.x1Colisao=0;
+    bloco3.yColisao=0;
+    bloco3.y1Colisao=0;
+    bloco3.largura=2*DESLOCAMENTO;
+    bloco3.altura=2*DESLOCAMENTO;
+    bloco3.ativo=1;
+
+    bloco4.posicaoX=0;
+    bloco4.posicaoY=3*DESLOCAMENTO;
+    bloco4.xColisao=0;
+    bloco4.x1Colisao=0;
+    bloco4.yColisao=0;
+    bloco4.y1Colisao=0;
+    bloco4.largura=2*DESLOCAMENTO;
+    bloco4.altura=5*DESLOCAMENTO;
+    bloco4.ativo=1;
+
+    bloco5.posicaoX=3*DESLOCAMENTO;
+    bloco5.posicaoY=3*DESLOCAMENTO;
+    bloco5.xColisao=0;
+    bloco5.x1Colisao=0;
+    bloco5.yColisao=0;
+    bloco5.y1Colisao=0;
+    bloco5.largura=5*DESLOCAMENTO;
+    bloco5.altura=5*DESLOCAMENTO;
+    bloco5.ativo=1;
+
+    bloco6.posicaoX=9*DESLOCAMENTO;
+    bloco6.posicaoY=3*DESLOCAMENTO;
+    bloco6.xColisao=0;
+    bloco6.x1Colisao=0;
+    bloco6.yColisao=0;
+    bloco6.y1Colisao=0;
+    bloco6.largura=2*DESLOCAMENTO;
+    bloco6.altura=5*DESLOCAMENTO;
+    bloco6.ativo=1;
+
+    bloco7.posicaoX=0;
+    bloco7.posicaoY=9*DESLOCAMENTO;
+    bloco7.xColisao=0;
+    bloco7.x1Colisao=0;
+    bloco7.yColisao=0;
+    bloco7.y1Colisao=0;
+    bloco7.largura=2*DESLOCAMENTO;
+    bloco7.altura=2*DESLOCAMENTO;
+    bloco7.ativo=1;
+
+    bloco8.posicaoX=3*DESLOCAMENTO;
+    bloco8.posicaoY=9*DESLOCAMENTO;
+    bloco8.xColisao=0;
+    bloco8.x1Colisao=0;
+    bloco8.yColisao=0;
+    bloco8.y1Colisao=0;
+    bloco8.largura=5*DESLOCAMENTO;
+    bloco8.altura=2*DESLOCAMENTO;
+    bloco8.ativo=1;
+
+    bloco9.posicaoX=9*DESLOCAMENTO;
+    bloco9.posicaoY=9*DESLOCAMENTO;
+    bloco9.xColisao=0;
+    bloco9.x1Colisao=0;
+    bloco9.yColisao=0;
+    bloco9.y1Colisao=0;
+    bloco9.largura=2*DESLOCAMENTO;
+    bloco9.altura=2*DESLOCAMENTO;
+    bloco9.ativo=1;
+
+
     //Inicializacao teclado
     teclado.backSpace=0;
     teclado.caracterPendente=0;
@@ -288,20 +402,6 @@ int initObjetos(){
 
 int initPersonagens(){
     int i;
-
-        //posicao X Y da janela em que sera mostrado o sprite
-    cat.acao=RUN;
-    //COL1=60(X) COL2=390(X)  LIN1=35(Y) LIN2=(Y)
-    cat.posicaoX=2*DESLOCAMENTO;
-    cat.posicaoY=2*DESLOCAMENTO;
-    cat.contSprite=0;
-    cat.spriteAtual=0;
-    cat.velocidadeX=1;
-    cat.velocidadeY=1;
-    cat.velocidadeSprite=59;
-    cat.ativo=1;
-    cat.contDesloc=0;
-    cat.contBlocos=0;
 
     //carrega a folha de sprites na variavel (IDLE - CAT)
     cat.frames_spriteIdle = 10;
@@ -397,6 +497,26 @@ int initPersonagens(){
             return 0;
         }
     }
+
+            //posicao X Y da janela em que sera mostrado o sprite
+    cat.acao=RUN;
+    //COL1=60(X) COL2=390(X)  LIN1=35(Y) LIN2=(Y)
+    cat.posicaoX=2*DESLOCAMENTO;
+    cat.posicaoY=2*DESLOCAMENTO;
+    cat.contSprite=0;
+    cat.spriteAtual=0;
+    cat.velocidadeX=1;
+    cat.velocidadeY=1;
+    cat.velocidadeSprite=59;
+    cat.ativo=1;
+    cat.contDesloc=0;
+    cat.contBlocos=0;
+    cat.xColisao=15;
+    cat.x1Colisao=-(al_get_bitmap_width(cat.spriteImg[0][0])-DESLOCAMENTO)-15;
+    cat.yColisao=15;
+    cat.y1Colisao=-(al_get_bitmap_height(cat.spriteImg[0][0])-DESLOCAMENTO)-15;;
+    cat.largura=al_get_bitmap_width(cat.spriteImg[0][0]);
+    cat.altura=al_get_bitmap_height(cat.spriteImg[0][0]);
 
     return 1;
 }
@@ -513,10 +633,9 @@ int drawTelaJogo(Personagem *P){
     if(banana.ativo)al_draw_bitmap(banana.img,banana.posicaoX,banana.posicaoY,0);
     //desenha sprite na posicao X Y da janela, a partir da regiao X Y da folha
     if(P->ativo)al_draw_bitmap(P->spriteImg[P->acao][P->spriteAtual], P->posicaoX+(DESLOCAMENTO/2)-(al_get_bitmap_width(P->spriteImg[P->acao][P->spriteAtual])/2), P->posicaoY-(al_get_bitmap_height(P->spriteImg[P->acao][P->spriteAtual])-DESLOCAMENTO), P->sentido);
+    al_draw_rectangle(P->posicaoX+P->xColisao, P->posicaoY+P->yColisao, P->posicaoX+ P->largura +P->x1Colisao, P->posicaoY+ P->altura +P->y1Colisao,al_map_rgb(255,255,255),3);
 
     al_flip_display();
-
-
 
     //Coloca tela do compilador (quadro) como alvo **********************************************
     al_set_target_bitmap(al_get_backbuffer(quadro));
@@ -545,11 +664,37 @@ int drawTelaJogo(Personagem *P){
     if((btnLimpar.ativo)&&(btnLimpar.inverso))al_draw_bitmap(btnLimpar.imgInverso,btnLimpar.posicaoX,btnLimpar.posicaoY,0);
     else if(btnLimpar.ativo)al_draw_bitmap(btnLimpar.img,btnLimpar.posicaoX,btnLimpar.posicaoY,0);
     //marcador
-    if(marcador.ativo)al_draw_rectangle(marcador.posicaoX,marcador.posicaoY-10,marcador.posicaoX+al_get_display_width(quadro),marcador.posicaoY+backgroundQuadro.tamanhoFont+10,al_map_rgb(20, 255, 20),6);
+    if(marcador.ativo)al_draw_rectangle(marcador.posicaoX,marcador.posicaoY-10,marcador.posicaoX+al_get_display_width(quadro),marcador.posicaoY+backgroundQuadro.tamanhoFont+10,al_map_rgb(20, 255, 20),4);
 
     al_flip_display();
 
     return 0;
+}
+
+
+int colisao(Personagem obj1, Objeto obj2){
+    int ok = 0;
+    if((obj1.ativo)&&(obj2.ativo)){
+        int posX1Obj1 = obj1.posicaoX + obj1.largura + obj1.x1Colisao;
+        int posY1Obj1 = obj1.posicaoY + obj1.altura + obj1.y1Colisao;
+        int posX1Obj2 = obj2.posicaoX + obj2.largura + obj2.x1Colisao;
+        int posY1Obj2 = obj2.posicaoY + obj2.altura + obj2.y1Colisao;
+
+        if (((obj1.posicaoY+obj1.yColisao>=(obj2.posicaoY+obj2.yColisao+TOLERANCIA))&&
+            (obj1.posicaoY+obj1.yColisao<=(posY1Obj2-TOLERANCIA))) ||
+            ((posY1Obj1>=(obj2.posicaoY+obj2.yColisao+TOLERANCIA))&&
+            (posY1Obj1<=(posY1Obj2-TOLERANCIA)))){
+
+            if (((obj1.posicaoX+obj1.xColisao>=(obj2.posicaoX+obj2.xColisao+TOLERANCIA))&&
+                (obj1.posicaoX+obj1.xColisao<=(posX1Obj2-TOLERANCIA))) ||
+                ((posX1Obj1>=(obj2.posicaoX+obj2.xColisao+TOLERANCIA))&&
+                (posX1Obj1<=(posX1Obj2-TOLERANCIA)))){
+
+                ok = 1;
+            }
+        }
+    }
+    return ok;
 }
 
 void runPersonagem(Personagem *P, int Direcao){
@@ -1302,6 +1447,15 @@ void processadorInstrucao(InstrucaoPadrao *instrucao){
 void telaJogo(){
     if(Linha<nInstrucao){
         processadorInstrucao(&vetorInstrucao[Linha]);
+        if(colisao(cat,bloco1))printf("BATEU NO 1");
+        else if(colisao(cat,bloco2))printf("BATEU NO 2");
+        else if(colisao(cat,bloco3))printf("BATEU NO 3");
+        else if(colisao(cat,bloco4))printf("BATEU NO 4");
+        else if(colisao(cat,bloco5))printf("BATEU NO 5");
+        else if(colisao(cat,bloco6))printf("BATEU NO 6");
+        else if(colisao(cat,bloco7))printf("BATEU NO 7");
+        else if(colisao(cat,bloco8))printf("BATEU NO 8");
+        else if(colisao(cat,bloco9))printf("BATEU NO 9");
     }
 }
 

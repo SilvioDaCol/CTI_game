@@ -1,32 +1,32 @@
 
 ********* /COMANDOS SIMPLES:/ ********* 
 
-ANDA(DIRECAO);
+ANDAR(DIRECAO);
 
-PULA(DIRECAO);
+PULAR(DIRECAO);
 
-ABRE();
+ABRIR();
+
+PEGAR();
 
 
 
 ********* / REPETICAO: / ********* 
 
-REPETE (5)
-{
-  ANDA(DIRECAO);
+REPETIR(5){
+  ANDAR(DIRECAO);
+  ANDAR(DIRECAO);
 }
 
 
 
 ********* / CONDICIONAL: / ********* 
 
-SE(CHAVE)
-{
-  PEGA(CHAVE);
+SE(CHAVE){
+  PEGAR();
 }
 -------------------
-SE(BANANA = ESQUERDA)
-{
-  PULA(ESQUERDA);
+SE(BANANA){
+  PULAR(ESQUERDA);
 }
 -------------------

@@ -29,8 +29,8 @@
 #define UP              2
 #define DOWN            3
 #define DESLOCAMENTO    91 // = TELA(1000) / NUMERO DE QUADRADOS (11)
-#define QTDE_LIN_ALGO   17
-#define TAM_LIN_ALGO    16
+#define QTDE_LIN_ALGO   23
+#define TAM_LIN_ALGO    23
 #define ESPACAMENTO_LIN 15
 
 #define FLOAT_TO_INT(x) ((x)>=0?(int)((x)+0.5):(int)((x)-0.5))
@@ -95,6 +95,7 @@ typedef struct{ //InputDevice
     char cursor;
     int cursorAtivo;
     char codASCII;
+    int codTecla;
     int posicaoX;
     int posicaoY;
     int click;
@@ -135,6 +136,9 @@ int nInstrucao = 0; //Qtde de instrucoes
 int LinhaRepeticao=QTDE_LIN_ALGO+1; //armazena a localizacao da repeticao ativa
 int LinhaFimRepeticao=0; //armazena a localizacao do fim repeticao ativa
 int repeticaoAtiva=0; //Informa se repeticao ja foi satisfeita ou nao
+int LinhaCondicional=QTDE_LIN_ALGO+1; //armazena a localizacao da Condicional ativa
+int LinhaFimCondicional=0; //armazena a localizacao do fim Condicional ativa
+int condicionalAtiva=0; //Informa se Condicional ja foi satisfeita ou nao
 
 //texto do Quadro Negro
 char txtAlgoritmo[QTDE_LIN_ALGO][TAM_LIN_ALGO+1];
@@ -165,7 +169,7 @@ int initObjetos(){
     backgroundQuadro.posicaoX=0;
     backgroundQuadro.posicaoY=0;
     //Fonte do quadro
-    backgroundQuadro.tamanhoFont = 30;
+    backgroundQuadro.tamanhoFont = 20;
     backgroundQuadro.fontAtivo = 1;
     backgroundQuadro.posicaoFontX = 25;
     backgroundQuadro.posicaoFontY = 100;
@@ -183,6 +187,7 @@ int initObjetos(){
     marcador.posicaoX = 0;
     marcador.posicaoY = backgroundQuadro.posicaoFontY;
     marcador.velocidade = 30;
+    marcador.contador = 0; //Utilizado para contar qtde de Chaves fechadas (p/ Alinhamento)
 
     //carrega o botao Compilar
     btnCompilar.img = al_load_bitmap("img/btnCompilar.png");
@@ -231,6 +236,7 @@ int initObjetos(){
     chave.ativo=1;
     chave.posicaoX=8*DESLOCAMENTO;
     chave.posicaoY=8*DESLOCAMENTO;
+    strcpy(chave.texto, "CHAVE");
 
     //BANANA
     banana.img = al_load_bitmap("img/itens/cascaBanana.png");
@@ -238,8 +244,9 @@ int initObjetos(){
         return 0;
     }
     banana.ativo=1;
-    banana.posicaoX=5*DESLOCAMENTO;
+    banana.posicaoX=3*DESLOCAMENTO;
     banana.posicaoY=2*DESLOCAMENTO;
+    strcpy(banana.texto, "BANANA");
 
     //CASA2
     casa2.posicaoX=6*DESLOCAMENTO;
@@ -333,19 +340,19 @@ int initPersonagens(){
             return 0;
         }
     }
-    /*
+
     //carrega a folha de sprites na variavel (JUMP - CAT)
     cat.frames_spriteJump = 10;
-    cat.spriteImg[JUMP][0] = al_load_bitmap("img/cat/Jump (1).png");
-    cat.spriteImg[JUMP][1] = al_load_bitmap("img/cat/Jump (2).png");
-    cat.spriteImg[JUMP][2] = al_load_bitmap("img/cat/Jump (3).png");
-    cat.spriteImg[JUMP][3] = al_load_bitmap("img/cat/Jump (4).png");
-    cat.spriteImg[JUMP][4] = al_load_bitmap("img/cat/Jump (5).png");
-    cat.spriteImg[JUMP][5] = al_load_bitmap("img/cat/Jump (6).png");
-    cat.spriteImg[JUMP][6] = al_load_bitmap("img/cat/Jump (7).png");
-    cat.spriteImg[JUMP][7] = al_load_bitmap("img/cat/Jump (8).png");
-    cat.spriteImg[JUMP][8] = al_load_bitmap("img/cat/Jump (9).png");
-    cat.spriteImg[JUMP][9] = al_load_bitmap("img/cat/Jump (10).png");
+    cat.spriteImg[JUMP][0] = al_load_bitmap("img/cat/Jump (3).png");
+    cat.spriteImg[JUMP][1] = al_load_bitmap("img/cat/Jump (4).png");
+    cat.spriteImg[JUMP][2] = al_load_bitmap("img/cat/Jump (5).png");
+    cat.spriteImg[JUMP][3] = al_load_bitmap("img/cat/Jump (6).png");
+    cat.spriteImg[JUMP][4] = al_load_bitmap("img/cat/Jump (7).png");
+    cat.spriteImg[JUMP][5] = al_load_bitmap("img/cat/Jump (8).png");
+    cat.spriteImg[JUMP][6] = al_load_bitmap("img/cat/Jump (3).png");
+    cat.spriteImg[JUMP][7] = al_load_bitmap("img/cat/Jump (4).png");
+    cat.spriteImg[JUMP][8] = al_load_bitmap("img/cat/Jump (5).png");
+    cat.spriteImg[JUMP][9] = al_load_bitmap("img/cat/Jump (6).png");
     for(i=0;i<cat.frames_spriteJump;i++)
     {
         if (!cat.spriteImg[JUMP][i]){
@@ -371,7 +378,7 @@ int initPersonagens(){
             return 0;
         }
     }
-    */
+
     //carrega a folha de sprites na variavel (SLIDE - CAT)
     cat.frames_spriteSlide = 10;
     cat.spriteImg[SLIDE][0] = al_load_bitmap("img/cat/Slide (1).png");
@@ -503,7 +510,7 @@ int drawTelaJogo(Personagem *P){
                           0,
                           casa2.texto);
     if(chave.ativo)al_draw_bitmap(chave.img,chave.posicaoX,chave.posicaoY,0);
-    if(banana.ativo)al_draw_bitmap(banana.img,banana.posicaoX+5,banana.posicaoY+7,0);
+    if(banana.ativo)al_draw_bitmap(banana.img,banana.posicaoX,banana.posicaoY,0);
     //desenha sprite na posicao X Y da janela, a partir da regiao X Y da folha
     if(P->ativo)al_draw_bitmap(P->spriteImg[P->acao][P->spriteAtual], P->posicaoX+(DESLOCAMENTO/2)-(al_get_bitmap_width(P->spriteImg[P->acao][P->spriteAtual])/2), P->posicaoY-(al_get_bitmap_height(P->spriteImg[P->acao][P->spriteAtual])-DESLOCAMENTO), P->sentido);
 
@@ -546,7 +553,6 @@ int drawTelaJogo(Personagem *P){
 }
 
 void runPersonagem(Personagem *P, int Direcao){
-    int aux;
     //Seta acao atual a ser desenhada na tela
     P->acao = RUN;
 
@@ -588,11 +594,6 @@ void runPersonagem(Personagem *P, int Direcao){
     if(P->contDesloc>=DESLOCAMENTO){
         P->contBlocos++;
         P->contDesloc=0;
-        //Alinhamento do personagem no x,y dos blocos
-        aux = FLOAT_TO_INT((float)(P->posicaoX)/(float)(DESLOCAMENTO));
-        P->posicaoX = aux * DESLOCAMENTO;
-        aux = FLOAT_TO_INT((float)(P->posicaoY)/(float)(DESLOCAMENTO));
-        P->posicaoY = aux * DESLOCAMENTO;
     }
 }
 
@@ -746,11 +747,22 @@ void slidePersonagem(Personagem *P, int Direcao){
     }
 }
 
-void acao(Personagem *P, int movimento, int iteracao, int Direcao){
+int acao(Personagem *P, int movimento, int iteracao, int Direcao){
+    int fimAcao=0,aux;
     if(P->contBlocos>=iteracao){
-        Linha++;
         P->contBlocos=0;
         P->contDesloc=0;
+        if((P->acao==RUN)||(P->acao==JUMP)){
+                P->acao = RUN;
+                P->spriteAtual= 0;
+        }
+        //Alinhamento do personagem no x,y dos blocos
+        aux = FLOAT_TO_INT((float)(P->posicaoX)/(float)(DESLOCAMENTO));
+        P->posicaoX = aux * DESLOCAMENTO;
+        aux = FLOAT_TO_INT((float)(P->posicaoY)/(float)(DESLOCAMENTO));
+        P->posicaoY = aux * DESLOCAMENTO;
+
+        fimAcao = 1;
     }else{
         switch(movimento){
         case RUN:
@@ -771,7 +783,9 @@ void acao(Personagem *P, int movimento, int iteracao, int Direcao){
         default:
             break;
         }
+        fimAcao = 0;
     }
+    return fimAcao;
 }
 
 void finalizar(){
@@ -820,24 +834,61 @@ void tratamentoTeclado(){
 
             teclado.caracterPendente=0;
         }else{//---------------------------------Se foi tecla de comando
-            txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo]= '\0';// apaga cursor
             if(teclado.codASCII==8){ //BAKSPACE
+                teclado.cursorAtivo=0;
+                txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo]=teclado.cursor;
                 colunaAlgoritmo--;
                 if(colunaAlgoritmo<0){
+                    txtAlgoritmo[linhaAlgoritmo][TAM_LIN_ALGO-1]='\0';
                     linhaAlgoritmo--;
-                    colunaAlgoritmo=TAM_LIN_ALGO-1;
+                    txtAlgoritmo[linhaAlgoritmo][TAM_LIN_ALGO-1]='\0';
+                    colunaAlgoritmo=strlen(txtAlgoritmo[linhaAlgoritmo]);
                     if(linhaAlgoritmo<0){
                         linhaAlgoritmo=0;
                         colunaAlgoritmo=0;
                     }
                 }
-                txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo]= '\0'; //apaga letra na posicao atual
+                txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo]= ' '; //apaga letra na posicao atual
+                teclado.cursor = txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo];
             }else if(teclado.codASCII==13){//ENTER
-                txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo] = '\0';//apaga cursor
-                if(linhaAlgoritmo<QTDE_LIN_ALGO-1){
+                teclado.cursorAtivo=0;
+                txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo]=teclado.cursor;
+                if(linhaAlgoritmo<QTDE_LIN_ALGO){
                     colunaAlgoritmo=0;
                     linhaAlgoritmo++;
                 }
+            }else if(teclado.codTecla==ALLEGRO_KEY_UP){//CIMA
+                teclado.cursorAtivo=0;
+                txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo]=teclado.cursor;
+                if(linhaAlgoritmo<=0)linhaAlgoritmo=0;
+                else{
+                    linhaAlgoritmo--;
+                    if(colunaAlgoritmo>strlen(txtAlgoritmo[linhaAlgoritmo]))colunaAlgoritmo=strlen(txtAlgoritmo[linhaAlgoritmo]);
+                }
+                teclado.cursor = txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo];
+                //colunaAlgoritmo=strlen(txtAlgoritmo[linhaAlgoritmo]);
+            }else if(teclado.codTecla==ALLEGRO_KEY_DOWN){//BAIXO
+                teclado.cursorAtivo=0;
+                txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo]=teclado.cursor;
+                if(linhaAlgoritmo>=QTDE_LIN_ALGO)linhaAlgoritmo=QTDE_LIN_ALGO-1;
+                else {
+                    linhaAlgoritmo++;
+                    if(colunaAlgoritmo>strlen(txtAlgoritmo[linhaAlgoritmo]))colunaAlgoritmo=strlen(txtAlgoritmo[linhaAlgoritmo]);
+                }
+                teclado.cursor = txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo];
+                //colunaAlgoritmo=strlen(txtAlgoritmo[linhaAlgoritmo]);
+            }else if(teclado.codTecla==ALLEGRO_KEY_RIGHT){//DIREITA
+                //PARA IMPLEMENTAR ESTA FUNCAO DEVE-SE TAMBEM MODIFICAR ENTER, BACKSPACE E INSERCAO DE NOVOS CARACTERES
+                teclado.cursorAtivo=0;
+                txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo]=teclado.cursor;
+                if(colunaAlgoritmo<strlen(txtAlgoritmo[linhaAlgoritmo]))colunaAlgoritmo++;
+                teclado.cursor = txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo];
+            }else if(teclado.codTecla==ALLEGRO_KEY_LEFT){//ESQUERDA
+                //PARA IMPLEMENTAR ESTA FUNCAO DEVE-SE TAMBEM MODIFICAR ENTER, BACKSPACE E INSERCAO DE NOVOS CARACTERES
+                teclado.cursorAtivo=0;
+                txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo]=teclado.cursor;
+                if(colunaAlgoritmo>0)colunaAlgoritmo--;
+                teclado.cursor = txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo];
             }
         }
 
@@ -885,7 +936,7 @@ int mouseClick(Objeto botao){
 
 int compilador(){
     int i, linhaErro=0, inicio=255;
-    int ii,ok,numChavesAbertas=0,numChavesFechadas=0;
+    int ii,ok,numChavesAbertas=0,numChavesFechadas=0,possui_SE=0;
     char aux[TAM_LIN_ALGO];
 
     //Percorre algoritmo
@@ -912,13 +963,38 @@ int compilador(){
         // Controle de chaves do algoritmo **************************************
         if(strncmp(txtAlgoritmo[i],"}",1)==0){
             numChavesFechadas++;
-
-            nInstrucao++;
             linhaErro=255;
         }
+
         //Comado ANDA(ESQUERDA ou DIREITA) **************************************
         else if(strncmp(txtAlgoritmo[i],"ANDAR(",6)==0){
             vetorInstrucao[nInstrucao].comando=RUN;
+            vetorInstrucao[nInstrucao].iteracao=1;
+            vetorInstrucao[nInstrucao].P=&cat;
+            if(strncmp(&txtAlgoritmo[i][6],"DIREITA);",9)==0){
+                vetorInstrucao[nInstrucao].direcao=RIGHT;
+                nInstrucao++;
+                linhaErro=255;
+            }else if(strncmp(&txtAlgoritmo[i][6],"ESQUERDA);",10)==0){
+                vetorInstrucao[nInstrucao].direcao=LEFT;
+                nInstrucao++;
+                linhaErro=255;
+            }
+            else if(strncmp(&txtAlgoritmo[i][6],"CIMA);",6)==0){
+                vetorInstrucao[nInstrucao].direcao=UP;
+                nInstrucao++;
+                linhaErro=255;
+            }
+            else if(strncmp(&txtAlgoritmo[i][6],"BAIXO);",7)==0){
+                vetorInstrucao[nInstrucao].direcao=DOWN;
+                nInstrucao++;
+                linhaErro=255;
+            }
+        }// *************************************************************************
+
+        //Comado PULA(ESQUERDA ou DIREITA) **************************************
+        else if(strncmp(txtAlgoritmo[i],"PULAR(",6)==0){
+            vetorInstrucao[nInstrucao].comando=JUMP;
             vetorInstrucao[nInstrucao].iteracao=1;
             vetorInstrucao[nInstrucao].P=&cat;
             if(strncmp(&txtAlgoritmo[i][6],"DIREITA);",9)==0){
@@ -954,6 +1030,7 @@ int compilador(){
             nInstrucao++;
             linhaErro=255;
         }
+
         //Comado ABRIR **************************************
         else if(strncmp(txtAlgoritmo[i],"ABRIR();",8)==0){
             vetorInstrucao[nInstrucao].comando=ABRE;
@@ -965,7 +1042,7 @@ int compilador(){
 
             nInstrucao++;
             linhaErro=255;
-        }
+        }//**************************************************
 
         //Comado REPETE **************************************
         else if(strncmp(txtAlgoritmo[i],"REPETIR(",8)==0){
@@ -988,11 +1065,63 @@ int compilador(){
             vetorInstrucao[nInstrucao].qtdeIteracao = atoi(aux);
             if(vetorInstrucao[nInstrucao].qtdeIteracao==0)ok=0;
 
-            // Computacao do numero de comandos dentro da repeticao
+            //Computacao do numero de comandos dentro da repeticao
+            possui_SE=0;
             vetorInstrucao[nInstrucao].qtdeComandos=0;
-            for(ii=i+1;ii<QTDE_LIN_ALGO;ii++){
-                if(strncmp(txtAlgoritmo[ii],"}",1)==0)break;
-                vetorInstrucao[nInstrucao].qtdeComandos++;
+            for(ii=i+1;ii<=QTDE_LIN_ALGO;ii++){
+                if(strncmp(txtAlgoritmo[ii],"SE",2)==0){
+                        possui_SE++;
+                        vetorInstrucao[nInstrucao].qtdeComandos++;
+                }
+                else if((strncmp(txtAlgoritmo[ii],"}",1)==0)&&(possui_SE==0)){
+                        break;
+                }else if(strncmp(txtAlgoritmo[ii],"}",1)==0){
+                    possui_SE--;
+                }else vetorInstrucao[nInstrucao].qtdeComandos++;
+            }
+
+        //Se Instrucao foi compilada sem erros
+        if(ok){
+            nInstrucao++;
+            linhaErro=255;
+            }
+        }// *************************************************************************
+
+        //Comando CONDICIONAL SE**************************************
+        else if(strncmp(txtAlgoritmo[i],"SE(",3)==0){
+            vetorInstrucao[nInstrucao].comando=CONDICIONAL_SE;
+            vetorInstrucao[nInstrucao].P=&cat;
+            //Leitura do valor correpondente a iteracao e Busca por "){"
+            ok=0;
+            strcpy(aux,"a");
+            for(ii=3;ii<TAM_LIN_ALGO;ii++){
+                if(strncmp(&txtAlgoritmo[i][ii],"){",2)==0){
+                    numChavesAbertas++;//Controle de chaves no algoritmo
+                    ok=1; //Encontrou "){"  e sai do laco for
+                    break;
+                }else{ //Enquanto nao encontra "){"  ,   copia valores de dentro dos parenteses para variavel aux
+                    aux[ii-3]=txtAlgoritmo[i][ii];
+                    aux[ii-3+1]='\0';
+                }
+            }
+            //IDENTIFICA OBJETO (PARAMETRO DO IF)
+            if(strcmp(aux,"CHAVE")==0)vetorInstrucao[nInstrucao].objeto=&chave;
+            else if(strcmp(aux,"BANANA")==0)vetorInstrucao[nInstrucao].objeto=&banana;
+            else ok=0;
+
+            //Computacao do numero de comandos dentro da Condicional
+            possui_SE=0;
+            vetorInstrucao[nInstrucao].qtdeComandos=0;
+            for(ii=i+1;ii<=QTDE_LIN_ALGO;ii++){
+                if(strncmp(txtAlgoritmo[ii],"REPETIR(",8)==0){
+                        possui_SE++;
+                        vetorInstrucao[nInstrucao].qtdeComandos++;
+                }
+                else if((strncmp(txtAlgoritmo[ii],"}",1)==0)&&(possui_SE==0)){
+                        break;
+                }else if(strncmp(txtAlgoritmo[ii],"}",1)==0){
+                    possui_SE--;
+                }else vetorInstrucao[nInstrucao].qtdeComandos++;
             }
 
 
@@ -1000,8 +1129,7 @@ int compilador(){
             nInstrucao++;
             linhaErro=255;
             }
-        }
-
+        }// *************************************************************************
 
 
         //Em caso de erro, a linhaErro tera valor diferente de 255
@@ -1016,46 +1144,73 @@ int compilador(){
 }
 
 void processadorInstrucao(InstrucaoPadrao *instrucao){
+    int aux = Linha;
+
     switch(instrucao->comando){
     case RUN:
-        acao(instrucao->P, RUN, instrucao->iteracao, instrucao->direcao);
+        if(acao(instrucao->P, RUN, instrucao->iteracao, instrucao->direcao))Linha++;
         //Se for o ultimo comando dentro de uma repeticao, volta a linha da repeticao
         //Se nao for o ultimo ou nao estiver dentro de uma repeticao, vai para proxima Linha
         if((repeticaoAtiva)&&(Linha==LinhaFimRepeticao)){
                 Linha=LinhaRepeticao;
         }
+        //Se chegou ao fim da condicional, pula a chave da condicional
+        if((condicionalAtiva)&&(Linha==LinhaFimCondicional)){
+                condicionalAtiva=0;
+                marcador.contador++;//Alinha contador ao codigo
+        }
         break;
     case JUMP:
-        acao(instrucao->P, JUMP, instrucao->iteracao, instrucao->direcao);
+        if(acao(instrucao->P, JUMP, instrucao->iteracao, instrucao->direcao))Linha++;
+
         //Controle de repeticao
         if((repeticaoAtiva)&&(Linha==LinhaFimRepeticao)){
                 Linha=LinhaRepeticao;
+        }
+        //Controle de condicional
+        if((condicionalAtiva)&&(Linha==LinhaFimCondicional)){
+                condicionalAtiva=0;
+                marcador.contador++;//Alinha contador ao codigo
         }
         break;
     case IDLE:
-        acao(instrucao->P, IDLE, instrucao->iteracao, instrucao->direcao);
+        if(acao(instrucao->P, IDLE, instrucao->iteracao, instrucao->direcao))Linha++;
         //Controle de repeticao
         if((repeticaoAtiva)&&(Linha==LinhaFimRepeticao)){
                 Linha=LinhaRepeticao;
+        }
+        //Controle de condicional
+        if((condicionalAtiva)&&(Linha==LinhaFimCondicional)){
+                condicionalAtiva=0;
+                marcador.contador++;//Alinha contador ao codigo
         }
         break;
     case DEAD:
-        acao(instrucao->P, DEAD, instrucao->iteracao, instrucao->direcao);
+        if(acao(instrucao->P, DEAD, instrucao->iteracao, instrucao->direcao))Linha++;
         //Controle de repeticao
         if((repeticaoAtiva)&&(Linha==LinhaFimRepeticao)){
                 Linha=LinhaRepeticao;
+        }
+        //Controle de condicional
+        if((condicionalAtiva)&&(Linha==LinhaFimCondicional)){
+                condicionalAtiva=0;
+                marcador.contador++;//Alinha contador ao codigo
         }
         break;
     case SLIDE:
-        acao(instrucao->P, SLIDE, instrucao->iteracao, instrucao->direcao);
+        if(acao(instrucao->P, SLIDE, instrucao->iteracao, instrucao->direcao))Linha++;
         //Controle de repeticao
         if((repeticaoAtiva)&&(Linha==LinhaFimRepeticao)){
                 Linha=LinhaRepeticao;
         }
+        //Controle de condicional
+        if((condicionalAtiva)&&(Linha==LinhaFimCondicional)){
+                condicionalAtiva=0;
+                marcador.contador++;//Alinha contador ao codigo
+        }
         break;
     case PEGA:
-        acao(instrucao->P, IDLE, instrucao->iteracao, instrucao->direcao);
-        printf("\nX gato: %i   X da chave %i\nY gato %i   Y chave %i",instrucao->P->posicaoX,instrucao->objeto->posicaoX,instrucao->P->posicaoY,instrucao->objeto->posicaoY);
+        if(acao(instrucao->P, IDLE, instrucao->iteracao, instrucao->direcao))Linha++;
         if((instrucao->P->posicaoX==instrucao->objeto->posicaoX)&&
            (instrucao->P->posicaoY==instrucao->objeto->posicaoY)&&
            (instrucao->P->contBlocos>=instrucao->iteracao)){
@@ -1066,9 +1221,14 @@ void processadorInstrucao(InstrucaoPadrao *instrucao){
         if((repeticaoAtiva)&&(Linha==LinhaFimRepeticao)){
                 Linha=LinhaRepeticao;
         }
+        //Controle de condicional
+        if((condicionalAtiva)&&(Linha==LinhaFimCondicional)){
+                condicionalAtiva=0;
+                marcador.contador++;//Alinha contador ao codigo
+        }
         break;
     case ABRE:
-        acao(instrucao->P, IDLE, instrucao->iteracao, instrucao->direcao);
+        if(acao(instrucao->P, IDLE, instrucao->iteracao, instrucao->direcao))Linha++;
         if((instrucao->P->posicaoX==instrucao->objeto->posicaoX)&&
            (instrucao->P->posicaoY==instrucao->objeto->posicaoY)&&
            (instrucao->P->contBlocos>=instrucao->iteracao)){
@@ -1079,8 +1239,28 @@ void processadorInstrucao(InstrucaoPadrao *instrucao){
         if((repeticaoAtiva)&&(Linha==LinhaFimRepeticao)){
                 Linha=LinhaRepeticao;
         }
+        //Controle de condicional
+        if((condicionalAtiva)&&(Linha==LinhaFimCondicional)){
+                condicionalAtiva=0;
+                marcador.contador++;//Alinha contador ao codigo
+        }
         break;
     case CONDICIONAL_SE:
+        //Atribui localizacao da condicional
+        LinhaCondicional=Linha;
+        LinhaFimCondicional=Linha+instrucao->qtdeComandos+1;
+
+        if((instrucao->P->posicaoX==instrucao->objeto->posicaoX)&&
+           (instrucao->P->posicaoY==instrucao->objeto->posicaoY)){
+            condicionalAtiva=1;
+            Linha++;
+        }else{
+            Linha = LinhaFimCondicional;
+            condicionalAtiva=0;
+            //Alinha marcador
+            marcador.contador++;
+        }
+
         //Controle de repeticao
         if((repeticaoAtiva)&&(Linha==LinhaFimRepeticao)){
                 Linha=LinhaRepeticao;
@@ -1099,10 +1279,23 @@ void processadorInstrucao(InstrucaoPadrao *instrucao){
             Linha++;
         //Se repeticao foi satizfeita...
         }else{
-            Linha=LinhaFimRepeticao+1;
+            Linha=LinhaFimRepeticao;
             repeticaoAtiva=0;
+            //Alinha contador ao codigo
+            marcador.contador++;
+        }
+        //Controle de condicional
+        if((condicionalAtiva)&&(Linha==LinhaFimCondicional)){
+                condicionalAtiva=0;
         }
         break;
+    }//FIM DO SWITCH-CASE
+
+
+    if(Linha!=aux){
+        printf("\n-----\nLinha: %i",Linha);
+        printf("  -  Comando: %i",instrucao->comando);
+        printf("  -  Qtde-Comando: %i",instrucao->qtdeComandos);
     }
 }
 
@@ -1117,7 +1310,7 @@ void telaQuadro(){
     char msg[20]={"ERRO NA LINHA: "},erro[5];
 
     //Movimentos do Quadro
-    marcador.posicaoY= (backgroundQuadro.posicaoFontY)+(backgroundQuadro.tamanhoFont*(Linha+1))+(ESPACAMENTO_LIN*(Linha+1));
+    marcador.posicaoY= (backgroundQuadro.posicaoFontY)+(backgroundQuadro.tamanhoFont*(Linha+marcador.contador+1))+(ESPACAMENTO_LIN*(Linha+marcador.contador+1));
 
     //Varredura teclado
     tratamentoTeclado();
@@ -1134,6 +1327,7 @@ void telaQuadro(){
             al_show_native_message_box(quadro,"ERRO DE COMPILACAO","VERIFICAR CHAVES {}","",NULL,ALLEGRO_MESSAGEBOX_OK_CANCEL);
         }else{
             marcador.ativo=1;
+            marcador.contador=0;
         }
     }
 
@@ -1213,13 +1407,19 @@ int main(void){
         }
         //TECLADO...
         else if (evento.type == ALLEGRO_EVENT_KEY_CHAR){
-            teclado.codASCII = (char)evento.keyboard.unichar;
+            teclado.codTecla = evento.keyboard.keycode;  //Codigo da tecla
+            teclado.codASCII = (char)evento.keyboard.unichar; // Codigo ASCII
             if((teclado.codASCII >= 97)&&(teclado.codASCII <= 122))teclado.codASCII-=32;
             if((teclado.codASCII >= 32)&&(teclado.codASCII <= 126)){
                 teclado.caracterPendente = 1;
                 teclado.teclaPress = 1;
             }else if((teclado.codASCII == 8)||(teclado.codASCII == 13)){
                 teclado.teclaPress=1;
+            }else if((teclado.codTecla==ALLEGRO_KEY_UP)||
+                     (teclado.codTecla==ALLEGRO_KEY_DOWN)||
+                     (teclado.codTecla==ALLEGRO_KEY_RIGHT)||
+                     (teclado.codTecla==ALLEGRO_KEY_LEFT)){
+                         teclado.teclaPress=1;
             }
 
         }
@@ -1229,7 +1429,6 @@ int main(void){
         }else if(evento.type == ALLEGRO_EVENT_DISPLAY_RESIZE){
 
             if(evento.display.source == quadro){
-                printf("\n%i  %i", mouse.ajusteX,mouse.ajusteY);
                 mouse.ajusteX =  (float)(evento.display.width);
                 mouse.ajusteY =  (float)(evento.display.height);
             }

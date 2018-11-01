@@ -13,7 +13,7 @@
 #define ALTURA_TELA     1000
 #define LARGURA_QUADRO  330
 #define ALTURA_QUADRO   1000
-#define TOLERANCIA      10 //colisoes
+#define TOLERANCIA      0 //colisoes
 //Comandos (Instrucoes disponiveis):
 #define RUN             0
 #define JUMP            1
@@ -136,7 +136,11 @@ Objeto btnCompilar; //Fonte utilizada para numerar as linas do quadro
 Objeto btnLimpar;
 Objeto chave;
 Objeto banana;
+Objeto casa1;
 Objeto casa2;
+Objeto casa3;
+Objeto casa4;
+Objeto casa5;
 Objeto bloco1;
 Objeto bloco2;
 Objeto bloco3;
@@ -161,6 +165,7 @@ int repeticaoAtiva=0; //Informa se repeticao ja foi satisfeita ou nao
 int LinhaCondicional=QTDE_LIN_ALGO+1; //armazena a localizacao da Condicional ativa
 int LinhaFimCondicional=0; //armazena a localizacao do fim Condicional ativa
 int condicionalAtiva=0; //Informa se Condicional ja foi satisfeita ou nao
+int sentidoAtual=0;
 
 //texto do Quadro Negro
 char txtAlgoritmo[QTDE_LIN_ALGO][TAM_LIN_ALGO+1];
@@ -256,9 +261,10 @@ int initObjetos(){
         return 0;
     }
     chave.ativo=1;
-    chave.posicaoX=8*DESLOCAMENTO;
-    chave.posicaoY=8*DESLOCAMENTO;
+    chave.posicaoX=1*DESLOCAMENTO;
+    chave.posicaoY=2*DESLOCAMENTO;
     strcpy(chave.texto, "CHAVE");
+    chave.contador=0;//0 =  nãopegou chave    e     1 = pegou chave
 
     //BANANA
     banana.img = al_load_bitmap("img/itens/cascaBanana.png");
@@ -270,9 +276,39 @@ int initObjetos(){
     banana.posicaoY=2*DESLOCAMENTO;
     strcpy(banana.texto, "BANANA");
 
+
+    //CASA1
+    casa1.posicaoX=2*DESLOCAMENTO;
+    casa1.posicaoY=0*DESLOCAMENTO;
+    casa1.xColisao=0;
+    casa1.x1Colisao=0;
+    casa1.yColisao=0;
+    casa1.y1Colisao=0;
+    casa1.largura=DESLOCAMENTO;
+    casa1.altura=DESLOCAMENTO;
+    //Fonte da casa1
+    casa1.tamanhoFont = 30;
+    casa1.fontAtivo = 1;
+    casa1.posicaoFontX = 2*DESLOCAMENTO;
+    casa1.posicaoFontY = 0*DESLOCAMENTO;
+    casa1.textColour_R = 255;
+    casa1.textColour_G = 255;
+    casa1.textColour_B = 255;
+    strcpy(casa1.texto,"TRANCADA");
+    casa1.font = al_load_font("fonte/alarm_clock/alarm_clock.ttf", casa1.tamanhoFont, ALLEGRO_TTF_NO_KERNING);
+    if (!casa1.font){
+        return 0;
+    }
+
     //CASA2
     casa2.posicaoX=6*DESLOCAMENTO;
     casa2.posicaoY=8*DESLOCAMENTO;
+    casa2.xColisao=0;
+    casa2.x1Colisao=0;
+    casa2.yColisao=0;
+    casa2.y1Colisao=0;
+    casa2.largura=DESLOCAMENTO;
+    casa2.altura=DESLOCAMENTO;
     //Fonte da casa2
     casa2.tamanhoFont = 30;
     casa2.fontAtivo = 1;
@@ -284,6 +320,75 @@ int initObjetos(){
     strcpy(casa2.texto,"TRANCADA");
     casa2.font = al_load_font("fonte/alarm_clock/alarm_clock.ttf", casa2.tamanhoFont, ALLEGRO_TTF_NO_KERNING);
     if (!casa2.font){
+        return 0;
+    }
+
+    //CASA3
+    casa3.posicaoX=6*DESLOCAMENTO;
+    casa3.posicaoY=2*DESLOCAMENTO;
+    casa3.xColisao=0;
+    casa3.x1Colisao=0;
+    casa3.yColisao=0;
+    casa3.y1Colisao=0;
+    casa3.largura=DESLOCAMENTO;
+    casa3.altura=DESLOCAMENTO;
+    //Fonte da casa3
+    casa3.tamanhoFont = 30;
+    casa3.fontAtivo = 1;
+    casa3.posicaoFontX = 6*DESLOCAMENTO;
+    casa3.posicaoFontY = 2*DESLOCAMENTO;
+    casa3.textColour_R = 255;
+    casa3.textColour_G = 255;
+    casa3.textColour_B = 255;
+    strcpy(casa3.texto,"TRANCADA");
+    casa3.font = al_load_font("fonte/alarm_clock/alarm_clock.ttf", casa3.tamanhoFont, ALLEGRO_TTF_NO_KERNING);
+    if (!casa3.font){
+        return 0;
+    }
+
+    //CASA4
+    casa4.posicaoX=8*DESLOCAMENTO;
+    casa4.posicaoY=4*DESLOCAMENTO;
+    casa4.xColisao=0;
+    casa4.x1Colisao=0;
+    casa4.yColisao=0;
+    casa4.y1Colisao=0;
+    casa4.largura=DESLOCAMENTO;
+    casa4.altura=DESLOCAMENTO;
+    //Fonte da casa4
+    casa4.tamanhoFont = 30;
+    casa4.fontAtivo = 1;
+    casa4.posicaoFontX = 8*DESLOCAMENTO;
+    casa4.posicaoFontY = 4*DESLOCAMENTO;
+    casa4.textColour_R = 255;
+    casa4.textColour_G = 255;
+    casa4.textColour_B = 255;
+    strcpy(casa4.texto,"TRANCADA");
+    casa4.font = al_load_font("fonte/alarm_clock/alarm_clock.ttf", casa4.tamanhoFont, ALLEGRO_TTF_NO_KERNING);
+    if (!casa4.font){
+        return 0;
+    }
+
+   //CASA5
+    casa5.posicaoX=2*DESLOCAMENTO;
+    casa5.posicaoY=6*DESLOCAMENTO;
+    casa5.xColisao=0;
+    casa5.x1Colisao=0;
+    casa5.yColisao=0;
+    casa5.y1Colisao=0;
+    casa5.largura=DESLOCAMENTO;
+    casa5.altura=DESLOCAMENTO;
+    //Fonte da casa5
+    casa5.tamanhoFont = 30;
+    casa5.fontAtivo = 1;
+    casa5.posicaoFontX = 2*DESLOCAMENTO;
+    casa5.posicaoFontY = 6*DESLOCAMENTO;
+    casa5.textColour_R = 255;
+    casa5.textColour_G = 255;
+    casa5.textColour_B = 255;
+    strcpy(casa5.texto,"TRANCADA");
+    casa5.font = al_load_font("fonte/alarm_clock/alarm_clock.ttf", casa5.tamanhoFont, ALLEGRO_TTF_NO_KERNING);
+    if (!casa5.font){
         return 0;
     }
 
@@ -502,7 +607,7 @@ int initPersonagens(){
     cat.acao=RUN;
     //COL1=60(X) COL2=390(X)  LIN1=35(Y) LIN2=(Y)
     cat.posicaoX=2*DESLOCAMENTO;
-    cat.posicaoY=2*DESLOCAMENTO;
+    cat.posicaoY=1*DESLOCAMENTO;
     cat.contSprite=0;
     cat.spriteAtual=0;
     cat.velocidadeX=1;
@@ -511,10 +616,10 @@ int initPersonagens(){
     cat.ativo=1;
     cat.contDesloc=0;
     cat.contBlocos=0;
-    cat.xColisao=15;
-    cat.x1Colisao=-(al_get_bitmap_width(cat.spriteImg[0][0])-DESLOCAMENTO)-15;
-    cat.yColisao=15;
-    cat.y1Colisao=-(al_get_bitmap_height(cat.spriteImg[0][0])-DESLOCAMENTO)-15;;
+    cat.xColisao=30;
+    cat.x1Colisao=-(al_get_bitmap_width(cat.spriteImg[0][0])-DESLOCAMENTO)-35;
+    cat.yColisao=60;
+    cat.y1Colisao=-(al_get_bitmap_height(cat.spriteImg[0][0])-DESLOCAMENTO)-10;
     cat.largura=al_get_bitmap_width(cat.spriteImg[0][0]);
     cat.altura=al_get_bitmap_height(cat.spriteImg[0][0]);
 
@@ -623,17 +728,43 @@ int drawTelaJogo(Personagem *P){
     al_set_target_bitmap(al_get_backbuffer(janela));
     //desenha o backgroundJogo na tela
     if(backgroundJogo.ativo)al_draw_scaled_bitmap(backgroundJogo.img,0.0,0.0, al_get_bitmap_height(backgroundJogo.img), al_get_bitmap_width(backgroundJogo.img), 0.0,0.0, (float)al_get_display_height(janela), (float)al_get_display_width(janela),0);
+    if(casa1.fontAtivo) al_draw_textf(casa1.font,
+                          al_map_rgb(casa1.textColour_R,casa1.textColour_G,casa1.textColour_B),
+                          casa1.posicaoFontX,
+                          casa1.posicaoFontY,
+                          0,
+                          casa1.texto);
+    //al_draw_rectangle(casa1.posicaoX+casa1.xColisao, casa1.posicaoY+casa1.yColisao, casa1.posicaoX+ casa1.largura +casa1.x1Colisao, casa1.posicaoY+ casa1.altura +casa1.y1Colisao,al_map_rgb(255,255,255),3);
     if(casa2.fontAtivo) al_draw_textf(casa2.font,
                           al_map_rgb(casa2.textColour_R,casa2.textColour_G,casa2.textColour_B),
                           casa2.posicaoFontX,
                           casa2.posicaoFontY,
                           0,
                           casa2.texto);
+    if(casa3.fontAtivo) al_draw_textf(casa3.font,
+                          al_map_rgb(casa3.textColour_R,casa3.textColour_G,casa3.textColour_B),
+                          casa3.posicaoFontX,
+                          casa3.posicaoFontY,
+                          0,
+                          casa3.texto);
+    if(casa4.fontAtivo) al_draw_textf(casa4.font,
+                          al_map_rgb(casa4.textColour_R,casa4.textColour_G,casa4.textColour_B),
+                          casa4.posicaoFontX,
+                          casa4.posicaoFontY,
+                          0,
+                          casa4.texto);
+    if(casa5.fontAtivo) al_draw_textf(casa5.font,
+                          al_map_rgb(casa5.textColour_R,casa5.textColour_G,casa5.textColour_B),
+                          casa5.posicaoFontX,
+                          casa5.posicaoFontY,
+                          0,
+                          casa5.texto);
     if(chave.ativo)al_draw_bitmap(chave.img,chave.posicaoX,chave.posicaoY,0);
     if(banana.ativo)al_draw_bitmap(banana.img,banana.posicaoX,banana.posicaoY,0);
     //desenha sprite na posicao X Y da janela, a partir da regiao X Y da folha
     if(P->ativo)al_draw_bitmap(P->spriteImg[P->acao][P->spriteAtual], P->posicaoX+(DESLOCAMENTO/2)-(al_get_bitmap_width(P->spriteImg[P->acao][P->spriteAtual])/2), P->posicaoY-(al_get_bitmap_height(P->spriteImg[P->acao][P->spriteAtual])-DESLOCAMENTO), P->sentido);
-    al_draw_rectangle(P->posicaoX+P->xColisao, P->posicaoY+P->yColisao, P->posicaoX+ P->largura +P->x1Colisao, P->posicaoY+ P->altura +P->y1Colisao,al_map_rgb(255,255,255),3);
+    //Retangulo para verificar a posicao de colisao do personagem
+    //al_draw_rectangle(P->posicaoX+P->xColisao, P->posicaoY+P->yColisao, P->posicaoX+ P->largura +P->x1Colisao, P->posicaoY+ P->altura +P->y1Colisao,al_map_rgb(255,255,255),3);
 
     al_flip_display();
 
@@ -818,41 +949,16 @@ void jumpPersonagem(Personagem *P, int Direcao){
     }
 }
 
-void deadPersonagem(Personagem *P, int Direcao){
+int deadPersonagem(Personagem *P, int Direcao){
         //SPRITES
     P->acao = DEAD;
     if( P->contSprite > (FPS - P->velocidadeSprite) ){
-        P->spriteAtual++;
-        if(P->spriteAtual>=P->frames_spriteDead-1) P->spriteAtual=0;
         P->contSprite=0;
+        P->spriteAtual++;
+        if(P->spriteAtual>=P->frames_spriteDead-1) return 1;
     }else P->contSprite++;
-    //DESLOCAMENTO
-    switch(Direcao){
-    case LEFT:
-        P->posicaoX-= P->velocidadeX;
-        P->contDesloc+= P->velocidadeX;
-        P->sentido = ALLEGRO_FLIP_HORIZONTAL;
-        break;
-    case RIGHT:
-        P->posicaoX+=P->velocidadeX;
-        P->contDesloc+= P->velocidadeX;
-        P->sentido = 0;
-        break;
-    case UP:
-        P->posicaoY-=P->velocidadeY;
-        P->contDesloc+= P->velocidadeY;
-        P->sentido = 0;
-        break;
-    case DOWN:
-        P->posicaoY+=P->velocidadeY;
-        P->contDesloc+= P->velocidadeY;
-        break;
-    }
-    //BLOCOS
-    if(P->contDesloc>=DESLOCAMENTO){
-        P->contBlocos++;
-        P->contDesloc=0;
-    }
+
+    return 0;
 }
 
 void slidePersonagem(Personagem *P, int Direcao){
@@ -911,6 +1017,10 @@ int acao(Personagem *P, int movimento, int iteracao, int Direcao){
     }else{
         switch(movimento){
         case RUN:
+            if((P->posicaoX==banana.posicaoX) && (P->posicaoY==banana.posicaoY)){
+                P->acao= SLIDE;
+                return 1;
+            }
             runPersonagem(P, Direcao);
             break;
         case JUMP:
@@ -1183,7 +1293,7 @@ int compilador(){
             vetorInstrucao[nInstrucao].P=&cat;
             vetorInstrucao[nInstrucao].acao=IDLE;
             vetorInstrucao[nInstrucao].direcao=RIGHT;
-            vetorInstrucao[nInstrucao].objeto = &casa2;
+            vetorInstrucao[nInstrucao].objeto = &casa1;
 
             nInstrucao++;
             linhaErro=255;
@@ -1288,8 +1398,16 @@ int compilador(){
     return linhaErro;
 }
 
+int comparaPosicao(Personagem *P, Objeto *O){
+    if((P->posicaoX==O->posicaoX)&& (P->posicaoY==O->posicaoY)){
+        return 1;
+    }
+    return 0;
+}
+
 void processadorInstrucao(InstrucaoPadrao *instrucao){
     int aux = Linha;
+    sentidoAtual = instrucao->direcao;
 
     switch(instrucao->comando){
     case RUN:
@@ -1306,7 +1424,10 @@ void processadorInstrucao(InstrucaoPadrao *instrucao){
         }
         break;
     case JUMP:
-        if(acao(instrucao->P, JUMP, instrucao->iteracao, instrucao->direcao))Linha++;
+        if(acao(instrucao->P, JUMP, instrucao->iteracao, instrucao->direcao)){
+            if(repeticaoAtiva)vetorInstrucao[LinhaRepeticao].qtdeIteracao--;
+            Linha++;
+        }
 
         //Controle de repeticao
         if((repeticaoAtiva)&&(Linha==LinhaFimRepeticao)){
@@ -1356,12 +1477,12 @@ void processadorInstrucao(InstrucaoPadrao *instrucao){
         break;
     case PEGA:
         if(acao(instrucao->P, IDLE, instrucao->iteracao, instrucao->direcao))Linha++;
-        if((instrucao->P->posicaoX==instrucao->objeto->posicaoX)&&
-           (instrucao->P->posicaoY==instrucao->objeto->posicaoY)&&
-           (instrucao->P->contBlocos>=instrucao->iteracao)){
+        if(comparaPosicao(instrucao->P, instrucao->objeto)){
             instrucao->objeto->posicaoX=5*DESLOCAMENTO;
             instrucao->objeto->posicaoY=0;
+            instrucao->objeto->contador=1;
         }
+
         //Controle de repeticao
         if((repeticaoAtiva)&&(Linha==LinhaFimRepeticao)){
                 Linha=LinhaRepeticao;
@@ -1374,11 +1495,21 @@ void processadorInstrucao(InstrucaoPadrao *instrucao){
         break;
     case ABRE:
         if(acao(instrucao->P, IDLE, instrucao->iteracao, instrucao->direcao))Linha++;
+
+        if(instrucao->P->contBlocos>=instrucao->iteracao && chave.contador){
+                if(comparaPosicao(&cat,&casa1))strcpy(casa1.texto, "ABERTA");
+                else if(comparaPosicao(&cat,&casa2))strcpy(casa1.texto, "ABERTA");
+                else if(comparaPosicao(&cat,&casa3))strcpy(casa1.texto, "ABERTA");
+                else if(comparaPosicao(&cat,&casa4))strcpy(casa1.texto, "ABERTA");
+                else if(comparaPosicao(&cat,&casa5))strcpy(casa1.texto, "ABERTA");
+        }
+        //else strcpy(casa1.texto, "ABERTA");
+        /*
         if((instrucao->P->posicaoX==instrucao->objeto->posicaoX)&&
            (instrucao->P->posicaoY==instrucao->objeto->posicaoY)&&
            (instrucao->P->contBlocos>=instrucao->iteracao)){
             strcpy(casa2.texto,"ABERTA");
-        }
+        }*/
 
         //Controle de repeticao
         if((repeticaoAtiva)&&(Linha==LinhaFimRepeticao)){
@@ -1447,16 +1578,58 @@ void processadorInstrucao(InstrucaoPadrao *instrucao){
 void telaJogo(){
     if(Linha<nInstrucao){
         processadorInstrucao(&vetorInstrucao[Linha]);
-        if(colisao(cat,bloco1))printf("BATEU NO 1");
-        else if(colisao(cat,bloco2))printf("BATEU NO 2");
-        else if(colisao(cat,bloco3))printf("BATEU NO 3");
-        else if(colisao(cat,bloco4))printf("BATEU NO 4");
-        else if(colisao(cat,bloco5))printf("BATEU NO 5");
-        else if(colisao(cat,bloco6))printf("BATEU NO 6");
-        else if(colisao(cat,bloco7))printf("BATEU NO 7");
-        else if(colisao(cat,bloco8))printf("BATEU NO 8");
-        else if(colisao(cat,bloco9))printf("BATEU NO 9");
+
+        if(colisao(cat,bloco1)){
+            cat.acao=DEAD;
+            cat.spriteAtual=0;
+        }
+        else if(colisao(cat,bloco2)){
+            cat.acao=DEAD;
+            cat.spriteAtual=0;
+        }
+        else if(colisao(cat,bloco3)){
+            cat.acao=DEAD;
+            cat.spriteAtual=0;
+        }
+        else if(colisao(cat,bloco4)){
+            cat.acao=DEAD;
+            cat.spriteAtual=0;
+        }
+        else if(colisao(cat,bloco5)){
+            cat.acao=DEAD;
+            cat.spriteAtual=0;
+        }
+        else if(colisao(cat,bloco6)){
+            cat.acao=DEAD;
+            cat.spriteAtual=0;
+        }
+        else if(colisao(cat,bloco7)){
+            cat.acao=DEAD;
+            cat.spriteAtual=0;
+        }
+        else if(colisao(cat,bloco8)){
+            cat.acao=DEAD;
+            cat.spriteAtual=0;
+        }
+        else if(colisao(cat,bloco9)){
+            cat.acao=DEAD;
+            cat.spriteAtual=0;
+        }else if(cat.posicaoX<0||cat.posicaoY<-20||cat.posicaoX>(DESLOCAMENTO*10)||cat.posicaoY>(DESLOCAMENTO*10)){
+            cat.acao=DEAD;
+            cat.spriteAtual=0;
+        }
     }
+
+    if(cat.acao==SLIDE){
+        Linha=nInstrucao+1;
+        if(acao(&cat,SLIDE,2,sentidoAtual))cat.acao=DEAD;
+    }
+
+    if(cat.acao==DEAD){
+            Linha=nInstrucao+1;
+            if(cat.spriteAtual<cat.frames_spriteDead-1)deadPersonagem(&cat,cat.sentido);
+            else cat.acao=DEAD;
+        }
 }
 
 void telaQuadro(){

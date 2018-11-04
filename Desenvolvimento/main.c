@@ -52,8 +52,8 @@ typedef struct{ //Objetos
     int x1Colisao;
     int yColisao;
     int y1Colisao;
-    int largura;
-    int altura;
+    float largura;
+    float altura;
     int contador;
     int velocidade;
     int ativo;
@@ -112,8 +112,7 @@ typedef struct{ //InputDevice
     int posicaoX;
     int posicaoY;
     int click;
-    int ajusteX;
-    int ajusteY;
+    ALLEGRO_DISPLAY *displayAtual;
 }InputDevice;
 
 typedef struct{//InstrucaoPadrao
@@ -552,8 +551,6 @@ int initObjetos(){
     mouse.posicaoX = 0;
     mouse.posicaoY = 0;
     mouse.click = 0;
-    mouse.ajusteX = LARGURA_QUADRO;
-    mouse.ajusteY = ALTURA_QUADRO;
 
     return 1;
 }
@@ -721,6 +718,8 @@ int inicializar(){
     }
     al_set_window_title(quadro, "Compilador");
     al_set_window_position(quadro,LARGURA_TELA,monitor.y1);
+    backgroundQuadro.largura = LARGURA_QUADRO;
+    backgroundQuadro.altura = ALTURA_QUADRO;
 
     janela = al_create_display(LARGURA_TELA, ALTURA_TELA);
     if(!janela) {
@@ -729,7 +728,8 @@ int inicializar(){
     }
     al_set_window_title(janela, "Projeto Wash - CTI Renato Archer");
     al_set_window_position(janela,monitor.x1,monitor.y1);
-
+    backgroundJogo.largura = LARGURA_TELA;
+    backgroundJogo.altura = ALTURA_TELA;
 
     //inicializa addon do teclado
     if(!al_install_keyboard()){
@@ -1238,8 +1238,17 @@ void tratamentoTeclado(){
 }
 
 void ajustaPosMouse(int mouseX, int mouseY){
-    float difX = (float)mouse.ajusteX/(float)LARGURA_QUADRO;
-    float difY = (float)mouse.ajusteY/(float)ALTURA_QUADRO;
+    float difX;
+    float difY;
+
+    if(mouse.displayAtual==quadro){
+        difX = backgroundQuadro.largura/(float)LARGURA_QUADRO;
+        difY = backgroundQuadro.altura/(float)ALTURA_QUADRO;
+    }else{
+        difX = backgroundJogo.largura/(float)LARGURA_TELA;
+        difY = backgroundJogo.altura/(float)ALTURA_TELA;
+    }
+
     mouse.posicaoX = (int)((float)mouseX/difX);
     mouse.posicaoY = (int)((float)mouseY/difY);
 }
@@ -1920,11 +1929,15 @@ int main(void){
         }
         //MOUSE CLICK...
         else if (evento.type == ALLEGRO_EVENT_MOUSE_BUTTON_UP){
+            if(evento.mouse.display ==quadro)mouse.displayAtual = quadro;
+            else mouse.displayAtual = janela;
             mouse.click=1;
             ajustaPosMouse(evento.mouse.x, evento.mouse.y);
         }
         //MOUSE AXES...
         else if (evento.type == ALLEGRO_EVENT_MOUSE_AXES){
+            if(evento.mouse.display ==quadro)mouse.displayAtual = quadro;
+            else mouse.displayAtual = janela;
             ajustaPosMouse(evento.mouse.x, evento.mouse.y);
         }
         //TECLADO...
@@ -1952,9 +1965,14 @@ int main(void){
         }else if(evento.type == ALLEGRO_EVENT_DISPLAY_RESIZE){
 
             if(evento.display.source == quadro){
-                mouse.ajusteX =  (float)(evento.display.width);
-                mouse.ajusteY =  (float)(evento.display.height);
+                backgroundQuadro.largura =  (float)(evento.display.width);
+                backgroundQuadro.altura =  (float)(evento.display.height);
             }
+            if(evento.display.source == janela){
+                backgroundJogo.largura =  (float)(evento.display.width);
+                backgroundJogo.altura =  (float)(evento.display.height);
+            }
+
         }
         /* -- ATUALIZA TELA -- */
         desenha=1;
@@ -1963,7 +1981,7 @@ int main(void){
 
             //Detecta se Objetivo foi alcancado
             if(((etapaAtual==1) && (strcmp(casa2.texto,"ABERTA")==0) && (Linha<=nInstrucao) ) ||
-               ((etapaAtual==2) && (strcmp(casa4.texto,"ABERTA")==0))){
+               ((etapaAtual==2) && (strcmp(casa4.texto,"ABERTA")==0) && (Linha<=nInstrucao) )){
                 al_show_native_message_box(janela, "FIM ! ! !", "M U I T O    B E M ! ! !","VOCE ATINGIU SEU OBJETIVO ! ! !",NULL,ALLEGRO_MESSAGEBOX_WARN);
                 Linha=nInstrucao+1;
             }

@@ -30,8 +30,8 @@
 #define UP              2
 #define DOWN            3
 #define DESLOCAMENTO    91 // = TELA(1000) / NUMERO DE QUADRADOS (11)
-#define QTDE_LIN_ALGO   23
-#define TAM_LIN_ALGO    23
+#define QTDE_LIN_ALGO   29
+#define TAM_LIN_ALGO    28
 #define ESPACAMENTO_LIN 15
 
 #define FLOAT_TO_INT(x) ((x)>=0?(int)((x)+0.5):(int)((x)-0.5))
@@ -131,9 +131,12 @@ typedef struct{//InstrucaoPadrao
 /* PERSONAGENS, OBJETOS, INPUT DEVICES E VETOR DE INSTRUCAO ------------------------------------*/
 Objeto backgroundJogo;
 Objeto backgroundQuadro;
+Objeto backgroundAjuda;
 Objeto marcador;
 Objeto btnCompilar; //Fonte utilizada para numerar as linas do quadro
 Objeto btnLimpar;
+Objeto btnPlay;
+Objeto btnProxFase;
 Objeto chave;
 Objeto banana;
 Objeto casa1;
@@ -166,6 +169,7 @@ int LinhaCondicional=QTDE_LIN_ALGO+1; //armazena a localizacao da Condicional at
 int LinhaFimCondicional=0; //armazena a localizacao do fim Condicional ativa
 int condicionalAtiva=0; //Informa se Condicional ja foi satisfeita ou nao
 int sentidoAtual=0;
+int etapaAtual=1;
 
 //texto do Quadro Negro
 char txtAlgoritmo[QTDE_LIN_ALGO][TAM_LIN_ALGO+1];
@@ -196,10 +200,10 @@ int initObjetos(){
     backgroundQuadro.posicaoX=0;
     backgroundQuadro.posicaoY=0;
     //Fonte do quadro
-    backgroundQuadro.tamanhoFont = 20;
+    backgroundQuadro.tamanhoFont = 15;
     backgroundQuadro.fontAtivo = 1;
     backgroundQuadro.posicaoFontX = 25;
-    backgroundQuadro.posicaoFontY = 100;
+    backgroundQuadro.posicaoFontY = 50;
     backgroundQuadro.textColour_R = 255;
     backgroundQuadro.textColour_G = 255;
     backgroundQuadro.textColour_B = 255;
@@ -209,12 +213,61 @@ int initObjetos(){
         return 0;
     }
 
+    //carrega o backgroundAjuda
+    backgroundAjuda.img = al_load_bitmap("img/telaHelp.jpg");
+    if (!backgroundAjuda.img){
+        return 0;
+    }
+    backgroundAjuda.ativo=0;
+    backgroundAjuda.fontAtivo=0;
+    backgroundAjuda.posicaoX=0;
+    backgroundAjuda.posicaoY=0;
+    //Fonte do Ajuda
+    backgroundAjuda.tamanhoFont = 50;
+    backgroundAjuda.fontAtivo = 1;
+    backgroundAjuda.posicaoFontX = 25;
+    backgroundAjuda.posicaoFontY = 50;
+    backgroundAjuda.textColour_R = 20;
+    backgroundAjuda.textColour_G = 80;
+    backgroundAjuda.textColour_B = 20;
+    strcpy(backgroundAjuda.texto,"");
+    backgroundAjuda.font = al_load_font("fonte/alarm_clock/alarm_clock.ttf", backgroundAjuda.tamanhoFont, ALLEGRO_TTF_NO_KERNING);
+    if (!backgroundAjuda.font){
+        return 0;
+    }
+
     //carrega marcador
     marcador.ativo = 0;
     marcador.posicaoX = 0;
     marcador.posicaoY = backgroundQuadro.posicaoFontY;
     marcador.velocidade = 30;
     marcador.contador = 0; //Utilizado para contar qtde de Chaves fechadas (p/ Alinhamento)
+
+    //carrega o botao Play
+    btnPlay.img = al_load_bitmap("img/btnCompilar.png");
+    if (!btnPlay.img){
+        return 0;
+    }
+    btnPlay.imgInverso = al_load_bitmap("img/btnCompilarInverso.png");
+    if (!btnPlay.imgInverso){
+        return 0;
+    }
+    btnPlay.ativo=1;
+    btnPlay.posicaoX= (LARGURA_TELA)-100-(al_get_bitmap_width(btnPlay.img)*2);
+    btnPlay.posicaoY= backgroundAjuda.posicaoFontY-8;
+
+    //carrega o botao Proxima Fase
+    btnProxFase.img = al_load_bitmap("img/btnPoxFase.png");
+    if (!btnProxFase.img){
+        return 0;
+    }
+    btnProxFase.imgInverso = al_load_bitmap("img/btnPoxFaseInverso.png");
+    if (!btnProxFase.imgInverso){
+        return 0;
+    }
+    btnProxFase.ativo=1;
+    btnProxFase.posicaoX= (LARGURA_TELA)-50-al_get_bitmap_width(btnProxFase.img);
+    btnProxFase.posicaoY= btnPlay.posicaoY;
 
     //carrega o botao Compilar
     btnCompilar.img = al_load_bitmap("img/btnCompilar.png");
@@ -229,7 +282,7 @@ int initObjetos(){
     btnCompilar.posicaoX= (LARGURA_QUADRO/3)-50;
     btnCompilar.posicaoY= ALTURA_QUADRO-al_get_bitmap_height(btnCompilar.img)-10;
     //Fonte da numarecao de linhas do quadro
-    btnCompilar.tamanhoFont = 15;
+    btnCompilar.tamanhoFont = 12;
     btnCompilar.fontAtivo = 1;
     btnCompilar.posicaoFontX = 25;
     btnCompilar.posicaoFontY = 100;
@@ -287,10 +340,10 @@ int initObjetos(){
     casa1.largura=DESLOCAMENTO;
     casa1.altura=DESLOCAMENTO;
     //Fonte da casa1
-    casa1.tamanhoFont = 30;
+    casa1.tamanhoFont = 20;
     casa1.fontAtivo = 1;
-    casa1.posicaoFontX = 2*DESLOCAMENTO;
-    casa1.posicaoFontY = 0*DESLOCAMENTO;
+    casa1.posicaoFontX = 28;
+    casa1.posicaoFontY = DESLOCAMENTO+15;
     casa1.textColour_R = 255;
     casa1.textColour_G = 255;
     casa1.textColour_B = 255;
@@ -333,10 +386,10 @@ int initObjetos(){
     casa3.largura=DESLOCAMENTO;
     casa3.altura=DESLOCAMENTO;
     //Fonte da casa3
-    casa3.tamanhoFont = 30;
+    casa3.tamanhoFont = 25;
     casa3.fontAtivo = 1;
     casa3.posicaoFontX = 6*DESLOCAMENTO;
-    casa3.posicaoFontY = 2*DESLOCAMENTO;
+    casa3.posicaoFontY = 4*DESLOCAMENTO-23;
     casa3.textColour_R = 255;
     casa3.textColour_G = 255;
     casa3.textColour_B = 255;
@@ -356,10 +409,10 @@ int initObjetos(){
     casa4.largura=DESLOCAMENTO;
     casa4.altura=DESLOCAMENTO;
     //Fonte da casa4
-    casa4.tamanhoFont = 30;
+    casa4.tamanhoFont = 22;
     casa4.fontAtivo = 1;
-    casa4.posicaoFontX = 8*DESLOCAMENTO;
-    casa4.posicaoFontY = 4*DESLOCAMENTO;
+    casa4.posicaoFontX = 9*DESLOCAMENTO+45;
+    casa4.posicaoFontY = 5*DESLOCAMENTO;
     casa4.textColour_R = 255;
     casa4.textColour_G = 255;
     casa4.textColour_B = 255;
@@ -379,9 +432,9 @@ int initObjetos(){
     casa5.largura=DESLOCAMENTO;
     casa5.altura=DESLOCAMENTO;
     //Fonte da casa5
-    casa5.tamanhoFont = 30;
+    casa5.tamanhoFont = 23;
     casa5.fontAtivo = 1;
-    casa5.posicaoFontX = 2*DESLOCAMENTO;
+    casa5.posicaoFontX = 23;
     casa5.posicaoFontY = 6*DESLOCAMENTO;
     casa5.textColour_R = 255;
     casa5.textColour_G = 255;
@@ -766,6 +819,23 @@ int drawTelaJogo(Personagem *P){
     //Retangulo para verificar a posicao de colisao do personagem
     //al_draw_rectangle(P->posicaoX+P->xColisao, P->posicaoY+P->yColisao, P->posicaoX+ P->largura +P->x1Colisao, P->posicaoY+ P->altura +P->y1Colisao,al_map_rgb(255,255,255),3);
 
+
+    // *******  TELA AJUDA ***********
+    if(backgroundAjuda.ativo)al_draw_scaled_bitmap(backgroundAjuda.img,0.0,0.0, al_get_bitmap_height(backgroundAjuda.img), al_get_bitmap_width(backgroundAjuda.img), 0.0,0.0, (float)al_get_display_height(janela), (float)al_get_display_width(janela),0);
+    if((btnPlay.ativo)&&(btnPlay.inverso))al_draw_bitmap(btnPlay.imgInverso,btnPlay.posicaoX,btnPlay.posicaoY,0);
+    else if(btnPlay.ativo)al_draw_bitmap(btnPlay.img,btnPlay.posicaoX,btnPlay.posicaoY,0);
+    if((btnProxFase.ativo)&&(btnProxFase.inverso))al_draw_bitmap(btnProxFase.imgInverso,btnProxFase.posicaoX,btnProxFase.posicaoY,0);
+    else if(btnProxFase.ativo)al_draw_bitmap(btnProxFase.img,btnProxFase.posicaoX,btnProxFase.posicaoY,0);
+    if(backgroundAjuda.fontAtivo){
+        al_draw_textf(backgroundAjuda.font,
+                      al_map_rgb(backgroundAjuda.textColour_R,backgroundAjuda.textColour_G,backgroundAjuda.textColour_B),
+                      backgroundAjuda.posicaoFontX,
+                      backgroundAjuda.posicaoFontY,
+                      0,
+                      backgroundAjuda.texto);
+    }
+
+
     al_flip_display();
 
     //Coloca tela do compilador (quadro) como alvo **********************************************
@@ -1086,8 +1156,8 @@ void tratamentoTeclado(){
                     colunaAlgoritmo=TAM_LIN_ALGO;
                 }
             }
-
             teclado.caracterPendente=0;
+
         }else{//---------------------------------Se foi tecla de comando
             if(teclado.codASCII==8){ //BAKSPACE
                 teclado.cursorAtivo=0;
@@ -1144,6 +1214,22 @@ void tratamentoTeclado(){
                 txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo]=teclado.cursor;
                 if(colunaAlgoritmo>0)colunaAlgoritmo--;
                 teclado.cursor = txtAlgoritmo[linhaAlgoritmo][colunaAlgoritmo];
+            }else if(teclado.codTecla==ALLEGRO_KEY_ESCAPE){
+                if(backgroundAjuda.ativo){
+                    backgroundJogo.ativo=1;
+                    backgroundQuadro.ativo=1;
+                    backgroundAjuda.ativo=0;
+                    backgroundAjuda.fontAtivo=0;
+                    btnPlay.ativo=0;
+                    btnProxFase.ativo=0;
+                }else{
+                    backgroundJogo.ativo=0;
+                    backgroundQuadro.ativo=1;
+                    backgroundAjuda.ativo=1;
+                    backgroundAjuda.fontAtivo=1;
+                    btnPlay.ativo=1;
+                    btnProxFase.ativo=1;
+                }
             }
         }
 
@@ -1248,7 +1334,7 @@ int compilador(){
         }// *************************************************************************
 
         //Comado PULA(ESQUERDA ou DIREITA) **************************************
-        else if(strncmp(txtAlgoritmo[i],"PULAR(",6)==0){
+        else if(strncmp(txtAlgoritmo[i],"PULAR(",12)==0){
             vetorInstrucao[nInstrucao].comando=JUMP;
             vetorInstrucao[nInstrucao].iteracao=1;
             vetorInstrucao[nInstrucao].P=&cat;
@@ -1498,18 +1584,11 @@ void processadorInstrucao(InstrucaoPadrao *instrucao){
 
         if(instrucao->P->contBlocos>=instrucao->iteracao && chave.contador){
                 if(comparaPosicao(&cat,&casa1))strcpy(casa1.texto, "ABERTA");
-                else if(comparaPosicao(&cat,&casa2))strcpy(casa1.texto, "ABERTA");
-                else if(comparaPosicao(&cat,&casa3))strcpy(casa1.texto, "ABERTA");
-                else if(comparaPosicao(&cat,&casa4))strcpy(casa1.texto, "ABERTA");
-                else if(comparaPosicao(&cat,&casa5))strcpy(casa1.texto, "ABERTA");
+                else if(comparaPosicao(&cat,&casa2))strcpy(casa2.texto, "ABERTA");
+                else if(comparaPosicao(&cat,&casa3))strcpy(casa3.texto, "ABERTA");
+                else if(comparaPosicao(&cat,&casa4))strcpy(casa4.texto, "ABERTA");
+                else if(comparaPosicao(&cat,&casa5))strcpy(casa5.texto, "ABERTA");
         }
-        //else strcpy(casa1.texto, "ABERTA");
-        /*
-        if((instrucao->P->posicaoX==instrucao->objeto->posicaoX)&&
-           (instrucao->P->posicaoY==instrucao->objeto->posicaoY)&&
-           (instrucao->P->contBlocos>=instrucao->iteracao)){
-            strcpy(casa2.texto,"ABERTA");
-        }*/
 
         //Controle de repeticao
         if((repeticaoAtiva)&&(Linha==LinhaFimRepeticao)){
@@ -1575,10 +1654,137 @@ void processadorInstrucao(InstrucaoPadrao *instrucao){
     }
 }
 
+void initEtapa(int etapa){
+
+    switch(etapa){
+    case 1:
+        // PERSONAGEM GATO
+        cat.acao=RUN;
+        cat.posicaoX=2*DESLOCAMENTO;
+        cat.posicaoY=2*DESLOCAMENTO;
+        cat.contSprite=0;
+        cat.spriteAtual=0;
+        cat.ativo=1;
+        cat.contDesloc=0;
+        cat.contBlocos=0;
+
+        //CHAVE
+        chave.ativo=1;
+        chave.posicaoX=2*DESLOCAMENTO;
+        chave.posicaoY=5*DESLOCAMENTO;
+        chave.contador=0;//0 =  nãopegou chave    e     1 = pegou chave
+
+        //BANANA
+        banana.ativo=0;
+        banana.posicaoX=0*DESLOCAMENTO;
+        banana.posicaoY=0*DESLOCAMENTO;
+
+        //Titulo da etapa
+        strcpy(backgroundAjuda.texto, "DESAFIO 1: ABRA A CASA 2");
+        break;
+    case 2:
+        // PERSONAGEM GATO
+        cat.acao=RUN;
+        cat.posicaoX=5*DESLOCAMENTO;
+        cat.posicaoY=2*DESLOCAMENTO;
+        cat.contSprite=0;
+        cat.spriteAtual=0;
+        cat.ativo=1;
+        cat.contDesloc=0;
+        cat.contBlocos=0;
+
+        //CHAVE
+        chave.ativo=1;
+        chave.posicaoX=0*DESLOCAMENTO;
+        chave.posicaoY=8*DESLOCAMENTO;
+        chave.contador=0;//0 =  nãopegou chave    e     1 = pegou chave
+
+        //BANANA
+        banana.ativo=1;
+        banana.posicaoX=1*DESLOCAMENTO;
+        banana.posicaoY=8*DESLOCAMENTO;
+
+        //Titulo da etapa
+        strcpy(backgroundAjuda.texto, "DESAFIO 2: ABRA A CASA 4");
+        break;
+    }
+
+    //carrega marcador
+    marcador.ativo = 0;
+    marcador.posicaoX = 0;
+    marcador.posicaoY = backgroundQuadro.posicaoFontY;
+    marcador.velocidade = 30;
+    marcador.contador = 0; //Utilizado para contar qtde de Chaves fechadas (p/ Alinhamento)
+    //CASA1
+    strcpy(casa1.texto,"TRANCADA");
+    //CASA2
+    strcpy(casa2.texto,"TRANCADA");
+    //CASA3
+    strcpy(casa3.texto,"TRANCADA");
+    //CASA4
+    strcpy(casa4.texto,"TRANCADA");
+    //CASA5
+    strcpy(casa5.texto,"TRANCADA");
+    //Variaveis GLOBAIS
+    Linha = 0; // Indice do vetor de Instrucoes
+    LinhaRepeticao=QTDE_LIN_ALGO+1; //armazena a localizacao da repeticao ativa
+    LinhaFimRepeticao=0; //armazena a localizacao do fim repeticao ativa
+    repeticaoAtiva=0; //Informa se repeticao ja foi satisfeita ou nao
+    LinhaCondicional=QTDE_LIN_ALGO+1; //armazena a localizacao da Condicional ativa
+    LinhaFimCondicional=0; //armazena a localizacao do fim Condicional ativa
+    condicionalAtiva=0; //Informa se Condicional ja foi satisfeita ou nao
+}
+
+void telaAjuda(){
+    int i,j;
+    if(mouseClick(btnPlay)){
+
+
+        backgroundJogo.ativo=1;
+        backgroundQuadro.ativo=1;
+        backgroundAjuda.ativo=0;
+        backgroundAjuda.fontAtivo=0;
+        btnPlay.ativo=0;
+        btnProxFase.ativo=0;
+    }
+
+    if(mouseClick(btnProxFase)){
+        if(etapaAtual<=2)etapaAtual++;
+        else etapaAtual=1;
+
+        sentidoAtual=0;
+        nInstrucao = 0; //Qtde de instrucoes
+        for(i=0;i<QTDE_LIN_ALGO;i++){
+            for(j=0;j<TAM_LIN_ALGO;j++){
+                txtAlgoritmo[i][j]='\0';
+            }
+        }
+        linhaAlgoritmo=0;
+        colunaAlgoritmo=0;
+
+        backgroundJogo.ativo=0;
+        backgroundQuadro.ativo=1;
+        backgroundAjuda.ativo=1;
+        backgroundAjuda.fontAtivo=1;
+        btnPlay.ativo=1;
+        btnProxFase.ativo=1;
+        initEtapa(etapaAtual);
+    }
+
+    if(mousePosicao(btnPlay)){
+        btnPlay.inverso=1;
+    }else btnPlay.inverso=0;
+
+    if(mousePosicao(btnProxFase)){
+        btnProxFase.inverso=1;
+    }else btnProxFase.inverso=0;
+}
+
 void telaJogo(){
     if(Linha<nInstrucao){
         processadorInstrucao(&vetorInstrucao[Linha]);
 
+        //Varredura de colisoes
         if(colisao(cat,bloco1)){
             cat.acao=DEAD;
             cat.spriteAtual=0;
@@ -1655,25 +1861,15 @@ void telaQuadro(){
         }else{
             marcador.ativo=1;
             marcador.contador=0;
+            initEtapa(etapaAtual);
         }
     }
 
     if(mouseClick(btnLimpar)){
-        //reset gato
-        cat.posicaoX=180;
-        cat.posicaoY=180;
-        cat.contSprite=0;
-        cat.spriteAtual=0;
-        cat.velocidadeX=2;
-        cat.velocidadeY=2;
-        cat.velocidadeSprite=59;
-        cat.ativo=1;
-        cat.contDesloc=0;
-        cat.contBlocos=0;
+        initEtapa(etapaAtual);
+        Linha=nInstrucao+1;
 
-        marcador.ativo=0;
-
-        if(al_show_native_message_box(quadro,"ATENCAO!!","DESEJA APAGAR O CODIGO?","",NULL,ALLEGRO_MESSAGEBOX_YES_NO)){
+        if(al_show_native_message_box(quadro,"ATENCAO!!","DESEJA APAGAR O CODIGO?","","MANTER|APAGAR",ALLEGRO_MESSAGEBOX_YES_NO)){
             for(i=0;i<QTDE_LIN_ALGO;i++){
                 for(j=0;j<TAM_LIN_ALGO;j++){
                     txtAlgoritmo[i][j]='\0';
@@ -1694,7 +1890,7 @@ void telaQuadro(){
 }
 
 int main(void){
-    int desenha = 1,i,j;
+    int desenha = 1;
     int sair = 0;
 
     if (!inicializar()){
@@ -1702,15 +1898,13 @@ int main(void){
         return -1;
     }
 
-    if(mouseClick(btnLimpar)){
-        for(i=0;i<QTDE_LIN_ALGO;i++){
-            for(j=0;j<TAM_LIN_ALGO;j++){
-                txtAlgoritmo[i][j]='\0';
-            }
-        }
-    }
-    linhaAlgoritmo=0;
-    colunaAlgoritmo=0;
+    drawTelaJogo(&cat);
+    initEtapa(etapaAtual);
+
+    backgroundJogo.ativo=0;
+    backgroundQuadro.ativo=1;
+    backgroundAjuda.ativo=1;
+    backgroundAjuda.fontAtivo=1;
 
     while(!sair){
         ALLEGRO_EVENT evento;
@@ -1719,8 +1913,9 @@ int main(void){
         /* -- EVENTOS -- */
         //TIMER...
         if(evento.type == ALLEGRO_EVENT_TIMER){
-            telaJogo();
-            telaQuadro();
+            if(backgroundAjuda.ativo)telaAjuda();
+            if(backgroundJogo.ativo)telaJogo();
+            if(backgroundQuadro.ativo)telaQuadro();
             mouse.click=0;
         }
         //MOUSE CLICK...
@@ -1745,6 +1940,7 @@ int main(void){
             }else if((teclado.codTecla==ALLEGRO_KEY_UP)||
                      (teclado.codTecla==ALLEGRO_KEY_DOWN)||
                      (teclado.codTecla==ALLEGRO_KEY_RIGHT)||
+                     (teclado.codTecla==ALLEGRO_KEY_ESCAPE)||
                      (teclado.codTecla==ALLEGRO_KEY_LEFT)){
                          teclado.teclaPress=1;
             }
@@ -1764,7 +1960,15 @@ int main(void){
         desenha=1;
         if(desenha && al_is_event_queue_empty(fila_eventos)) {
         desenha = drawTelaJogo(&cat);
+
+            //Detecta se Objetivo foi alcancado
+            if(((etapaAtual==1) && (strcmp(casa2.texto,"ABERTA")==0) && (Linha<=nInstrucao) ) ||
+               ((etapaAtual==2) && (strcmp(casa4.texto,"ABERTA")==0))){
+                al_show_native_message_box(janela, "FIM ! ! !", "M U I T O    B E M ! ! !","VOCE ATINGIU SEU OBJETIVO ! ! !",NULL,ALLEGRO_MESSAGEBOX_WARN);
+                Linha=nInstrucao+1;
+            }
         }
+
     }
     finalizar();
     return 0;

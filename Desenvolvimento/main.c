@@ -225,7 +225,7 @@ int initObjetos(){
     backgroundAjuda.tamanhoFont = 50;
     backgroundAjuda.fontAtivo = 1;
     backgroundAjuda.posicaoFontX = 25;
-    backgroundAjuda.posicaoFontY = 50;
+    backgroundAjuda.posicaoFontY = 15;
     backgroundAjuda.textColour_R = 20;
     backgroundAjuda.textColour_G = 80;
     backgroundAjuda.textColour_B = 20;
@@ -1343,7 +1343,7 @@ int compilador(){
         }// *************************************************************************
 
         //Comado PULA(ESQUERDA ou DIREITA) **************************************
-        else if(strncmp(txtAlgoritmo[i],"PULAR(",12)==0){
+        else if(strncmp(txtAlgoritmo[i],"PULAR(",6)==0){
             vetorInstrucao[nInstrucao].comando=JUMP;
             vetorInstrucao[nInstrucao].iteracao=1;
             vetorInstrucao[nInstrucao].P=&cat;

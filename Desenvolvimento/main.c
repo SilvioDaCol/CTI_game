@@ -1684,9 +1684,9 @@ void initEtapa(int etapa){
         chave.contador=0;//0 =  nãopegou chave    e     1 = pegou chave
 
         //BANANA
-        banana.ativo=0;
-        banana.posicaoX=0*DESLOCAMENTO;
-        banana.posicaoY=0*DESLOCAMENTO;
+        banana.ativo=1;
+        banana.posicaoX=5*DESLOCAMENTO;
+        banana.posicaoY=2*DESLOCAMENTO;
 
         //Titulo da etapa
         strcpy(backgroundAjuda.texto, "DESAFIO 1: ABRA A CASA 2");
@@ -1710,8 +1710,8 @@ void initEtapa(int etapa){
 
         //BANANA
         banana.ativo=1;
-        banana.posicaoX=1*DESLOCAMENTO;
-        banana.posicaoY=8*DESLOCAMENTO;
+        banana.posicaoX=2*DESLOCAMENTO;
+        banana.posicaoY=5*DESLOCAMENTO;
 
         //Titulo da etapa
         strcpy(backgroundAjuda.texto, "DESAFIO 2: ABRA A CASA 4");
@@ -1837,7 +1837,7 @@ void telaJogo(){
 
     if(cat.acao==SLIDE){
         Linha=nInstrucao+1;
-        if(acao(&cat,SLIDE,2,sentidoAtual))cat.acao=DEAD;
+        if(acao(&cat,SLIDE,1,sentidoAtual))cat.acao=DEAD;
     }
 
     if(cat.acao==DEAD){

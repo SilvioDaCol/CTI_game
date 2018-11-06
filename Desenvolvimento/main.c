@@ -138,6 +138,7 @@ Objeto btnPlay;
 Objeto btnProxFase;
 Objeto chave;
 Objeto banana;
+Objeto PosicaoInicial;
 Objeto casa1;
 Objeto casa2;
 Objeto casa3;
@@ -328,6 +329,15 @@ int initObjetos(){
     banana.posicaoY=2*DESLOCAMENTO;
     strcpy(banana.texto, "BANANA");
 
+
+    //POSIÇÃO INICIAL
+    PosicaoInicial.img = al_load_bitmap("img/itens/youAreHere.png");
+    if (!PosicaoInicial.img){
+        return 0;
+    }
+    PosicaoInicial.ativo=1;
+    PosicaoInicial.posicaoX=3*DESLOCAMENTO;
+    PosicaoInicial.posicaoY=2*DESLOCAMENTO;
 
     //CASA1
     casa1.posicaoX=2*DESLOCAMENTO;
@@ -772,6 +782,7 @@ int inicializar(){
     al_register_event_source(fila_eventos, al_get_mouse_event_source());
     al_start_timer(timer);
 
+
     return 1;
 }
 
@@ -781,6 +792,7 @@ int drawTelaJogo(Personagem *P){
     al_set_target_bitmap(al_get_backbuffer(janela));
     //desenha o backgroundJogo na tela
     if(backgroundJogo.ativo)al_draw_scaled_bitmap(backgroundJogo.img,0.0,0.0, al_get_bitmap_height(backgroundJogo.img), al_get_bitmap_width(backgroundJogo.img), 0.0,0.0, (float)al_get_display_height(janela), (float)al_get_display_width(janela),0);
+    if(PosicaoInicial.ativo)al_draw_bitmap(PosicaoInicial.img,PosicaoInicial.posicaoX,PosicaoInicial.posicaoY,0);
     if(casa1.fontAtivo) al_draw_textf(casa1.font,
                           al_map_rgb(casa1.textColour_R,casa1.textColour_G,casa1.textColour_B),
                           casa1.posicaoFontX,
@@ -1734,6 +1746,10 @@ void initEtapa(int etapa){
     strcpy(casa4.texto,"TRANCADA");
     //CASA5
     strcpy(casa5.texto,"TRANCADA");
+    //POSICAO INICIAL
+    PosicaoInicial.ativo=1;
+    PosicaoInicial.posicaoX = cat.posicaoX+30;
+    PosicaoInicial.posicaoY = cat.posicaoY+42;
     //Variaveis GLOBAIS
     Linha = 0; // Indice do vetor de Instrucoes
     LinhaRepeticao=QTDE_LIN_ALGO+1; //armazena a localizacao da repeticao ativa
@@ -1871,6 +1887,19 @@ void telaQuadro(){
             marcador.ativo=1;
             marcador.contador=0;
             initEtapa(etapaAtual);
+
+            al_stop_timer(timer);
+            for(i=0;i<5;i++){
+                cat.ativo=1;
+                drawTelaJogo(&cat);
+                al_rest(0.01);
+
+                cat.ativo=0;
+                drawTelaJogo(&cat);
+                al_rest(0.001);
+            }
+            cat.ativo=1;
+            al_start_timer(timer);
         }
     }
 
@@ -1914,6 +1943,14 @@ int main(void){
     backgroundQuadro.ativo=1;
     backgroundAjuda.ativo=1;
     backgroundAjuda.fontAtivo=1;
+
+    strcpy(txtAlgoritmo[0], "INICIO");
+    strcpy(txtAlgoritmo[1], "ANDAR(CIMA);");
+    strcpy(txtAlgoritmo[2], "PULAR(BAIXO);");
+    strcpy(txtAlgoritmo[3], "ANDAR(ESQUERDA);");
+    strcpy(txtAlgoritmo[4], "PULAR(DIREITA);");
+    strcpy(txtAlgoritmo[5], "FIM");
+    linhaAlgoritmo=6;
 
     while(!sair){
         ALLEGRO_EVENT evento;

@@ -30,8 +30,8 @@
 #define UP              2
 #define DOWN            3
 #define DESLOCAMENTO    91 // = TELA(1000) / NUMERO DE QUADRADOS (11)
-#define QTDE_LIN_ALGO   29
-#define TAM_LIN_ALGO    28
+#define QTDE_LIN_ALGO   25
+#define TAM_LIN_ALGO    18
 #define ESPACAMENTO_LIN 15
 
 #define FLOAT_TO_INT(x) ((x)>=0?(int)((x)+0.5):(int)((x)-0.5))
@@ -208,7 +208,7 @@ int initObjetos(){
     backgroundQuadro.textColour_G = 255;
     backgroundQuadro.textColour_B = 255;
     strcpy(backgroundQuadro.texto,"COMANDOS AQUI:");
-    backgroundQuadro.font = al_load_font("fonte/tower.ttf", backgroundQuadro.tamanhoFont, ALLEGRO_TTF_NO_KERNING);
+    backgroundQuadro.font = al_load_font("fonte/htower.ttf", backgroundQuadro.tamanhoFont, ALLEGRO_TTF_NO_KERNING);
     if (!backgroundQuadro.font){
         return 0;
     }
@@ -1971,10 +1971,12 @@ int main(void){
     strcpy(txtAlgoritmo[0], "INICIO");
     strcpy(txtAlgoritmo[1], "ANDAR(CIMA);");
     strcpy(txtAlgoritmo[2], "PULAR(BAIXO);");
-    strcpy(txtAlgoritmo[3], "ANDAR(ESQUERDA);");
+    strcpy(txtAlgoritmo[3], "ANDAR(CIMA);");
     strcpy(txtAlgoritmo[4], "PULAR(DIREITA);");
-    strcpy(txtAlgoritmo[5], "FIM");
-    linhaAlgoritmo=6;
+    strcpy(txtAlgoritmo[5], "ANDAR(ESQUERDA);");
+    strcpy(txtAlgoritmo[6], "ANDAR(ESQUERDA);");
+    strcpy(txtAlgoritmo[7], "FIM");
+    linhaAlgoritmo=8;
 
     while(!sair){
         ALLEGRO_EVENT evento;

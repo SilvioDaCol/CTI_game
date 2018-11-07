@@ -1082,6 +1082,7 @@ void slidePersonagem(Personagem *P, int Direcao){
 
 int acao(Personagem *P, int movimento, int iteracao, int Direcao){
     int fimAcao=0,aux;
+    sentidoAtual = Direcao;
     if(P->contBlocos>=iteracao){
         P->contBlocos=0;
         P->contDesloc=0;
@@ -1357,7 +1358,7 @@ int compilador(){
         //Comado PULA(ESQUERDA ou DIREITA) **************************************
         else if(strncmp(txtAlgoritmo[i],"PULAR(",6)==0){
             vetorInstrucao[nInstrucao].comando=JUMP;
-            vetorInstrucao[nInstrucao].iteracao=1;
+            vetorInstrucao[nInstrucao].iteracao=2;
             vetorInstrucao[nInstrucao].P=&cat;
             if(strncmp(&txtAlgoritmo[i][6],"DIREITA);",9)==0){
                 vetorInstrucao[nInstrucao].direcao=RIGHT;
@@ -1506,15 +1507,39 @@ int compilador(){
 }
 
 int comparaPosicao(Personagem *P, Objeto *O){
-    if((P->posicaoX==O->posicaoX)&& (P->posicaoY==O->posicaoY)){
+
+    if(strcmp(O->texto,"BANANA") == 0){
+        switch(sentidoAtual){
+        case LEFT:
+            if((P->posicaoX-DESLOCAMENTO==O->posicaoX)&& (P->posicaoY==O->posicaoY)){
+                return 1;
+            }
+            break;
+        case RIGHT:
+            if((P->posicaoX+DESLOCAMENTO==O->posicaoX)&& (P->posicaoY==O->posicaoY)){
+                return 1;
+            }
+            break;
+        case UP:
+            if((P->posicaoX==O->posicaoX)&& (P->posicaoY-DESLOCAMENTO==O->posicaoY)){
+                return 1;
+            }
+            break;
+        case DOWN:
+            if((P->posicaoX==O->posicaoX)&& (P->posicaoY+DESLOCAMENTO==O->posicaoY)){
+                return 1;
+            }
+            break;
+        }
+    }else if((P->posicaoX==O->posicaoX)&& (P->posicaoY==O->posicaoY)){
         return 1;
     }
+
     return 0;
 }
 
 void processadorInstrucao(InstrucaoPadrao *instrucao){
     int aux = Linha;
-    sentidoAtual = instrucao->direcao;
 
     switch(instrucao->comando){
     case RUN:
@@ -1532,7 +1557,7 @@ void processadorInstrucao(InstrucaoPadrao *instrucao){
         break;
     case JUMP:
         if(acao(instrucao->P, JUMP, instrucao->iteracao, instrucao->direcao)){
-            if(repeticaoAtiva)vetorInstrucao[LinhaRepeticao].qtdeIteracao--;
+            if(repeticaoAtiva)vetorInstrucao[LinhaRepeticao].qtdeIteracao-=2;
             Linha++;
         }
 
@@ -1626,8 +1651,7 @@ void processadorInstrucao(InstrucaoPadrao *instrucao){
         LinhaCondicional=Linha;
         LinhaFimCondicional=Linha+instrucao->qtdeComandos+1;
 
-        if((instrucao->P->posicaoX==instrucao->objeto->posicaoX)&&
-           (instrucao->P->posicaoY==instrucao->objeto->posicaoY)){
+        if(comparaPosicao(instrucao->P, instrucao->objeto)){
             condicionalAtiva=1;
             Linha++;
         }else{

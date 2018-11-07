@@ -200,7 +200,7 @@ int initObjetos(){
     backgroundQuadro.posicaoX=0;
     backgroundQuadro.posicaoY=0;
     //Fonte do quadro
-    backgroundQuadro.tamanhoFont = 15;
+    backgroundQuadro.tamanhoFont = 20;
     backgroundQuadro.fontAtivo = 1;
     backgroundQuadro.posicaoFontX = 25;
     backgroundQuadro.posicaoFontY = 50;
@@ -208,7 +208,7 @@ int initObjetos(){
     backgroundQuadro.textColour_G = 255;
     backgroundQuadro.textColour_B = 255;
     strcpy(backgroundQuadro.texto,"COMANDOS AQUI:");
-    backgroundQuadro.font = al_load_font("fonte/alarm_clock/alarm_clock.ttf", backgroundQuadro.tamanhoFont, ALLEGRO_TTF_NO_KERNING);
+    backgroundQuadro.font = al_load_font("fonte/htower.ttf", backgroundQuadro.tamanhoFont, ALLEGRO_TTF_NO_KERNING);
     if (!backgroundQuadro.font){
         return 0;
     }

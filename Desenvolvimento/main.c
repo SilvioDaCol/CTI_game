@@ -208,7 +208,7 @@ int initObjetos(){
     backgroundQuadro.textColour_G = 255;
     backgroundQuadro.textColour_B = 255;
     strcpy(backgroundQuadro.texto,"COMANDOS AQUI:");
-    backgroundQuadro.font = al_load_font("fonte/htower.ttf", backgroundQuadro.tamanhoFont, ALLEGRO_TTF_NO_KERNING);
+    backgroundQuadro.font = al_load_font("fonte/tower.ttf", backgroundQuadro.tamanhoFont, ALLEGRO_TTF_NO_KERNING);
     if (!backgroundQuadro.font){
         return 0;
     }

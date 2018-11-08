@@ -131,6 +131,7 @@ typedef struct{//InstrucaoPadrao
 Objeto backgroundJogo;
 Objeto backgroundQuadro;
 Objeto backgroundAjuda;
+Objeto ObjetivoAlcancado;
 Objeto marcador;
 Objeto btnCompilar; //Fonte utilizada para numerar as linas do quadro
 Objeto btnLimpar;
@@ -328,6 +329,15 @@ int initObjetos(){
     banana.posicaoX=3*DESLOCAMENTO;
     banana.posicaoY=2*DESLOCAMENTO;
     strcpy(banana.texto, "BANANA");
+
+    //Objetivo Alcançado
+    ObjetivoAlcancado.img = al_load_bitmap("img/itens/amigos.jpg");
+    if (!ObjetivoAlcancado.img){
+        return 0;
+    }
+    ObjetivoAlcancado.ativo=0;
+    ObjetivoAlcancado.posicaoX=0*DESLOCAMENTO;
+    ObjetivoAlcancado.posicaoY=1*DESLOCAMENTO;
 
 
     //POSIÇÃO INICIAL
@@ -830,7 +840,7 @@ int drawTelaJogo(Personagem *P){
     if(P->ativo)al_draw_bitmap(P->spriteImg[P->acao][P->spriteAtual], P->posicaoX+(DESLOCAMENTO/2)-(al_get_bitmap_width(P->spriteImg[P->acao][P->spriteAtual])/2), P->posicaoY-(al_get_bitmap_height(P->spriteImg[P->acao][P->spriteAtual])-DESLOCAMENTO), P->sentido);
     //Retangulo para verificar a posicao de colisao do personagem
     //al_draw_rectangle(P->posicaoX+P->xColisao, P->posicaoY+P->yColisao, P->posicaoX+ P->largura +P->x1Colisao, P->posicaoY+ P->altura +P->y1Colisao,al_map_rgb(255,255,255),3);
-
+    if(ObjetivoAlcancado.ativo)al_draw_bitmap(ObjetivoAlcancado.img, ObjetivoAlcancado.posicaoX, ObjetivoAlcancado.posicaoY,0);
 
     // *******  TELA AJUDA ***********
     if(backgroundAjuda.ativo)al_draw_scaled_bitmap(backgroundAjuda.img,0.0,0.0, al_get_bitmap_height(backgroundAjuda.img), al_get_bitmap_width(backgroundAjuda.img), 0.0,0.0, (float)al_get_display_height(janela), (float)al_get_display_width(janela),0);
@@ -1716,6 +1726,31 @@ void initEtapa(int etapa){
         //CHAVE
         chave.ativo=1;
         chave.posicaoX=2*DESLOCAMENTO;
+        chave.posicaoY=1*DESLOCAMENTO;
+        chave.contador=0;//0 =  nãopegou chave    e     1 = pegou chave
+
+        //BANANA
+        banana.ativo=0;
+        banana.posicaoX=2*DESLOCAMENTO;
+        banana.posicaoY=5*DESLOCAMENTO;
+
+        //Titulo da etapa
+        strcpy(backgroundAjuda.texto, "DESAFIO 1: ABRA A CASA 1");
+        break;
+    case 2:
+        // PERSONAGEM GATO
+        cat.acao=RUN;
+        cat.posicaoX=2*DESLOCAMENTO;
+        cat.posicaoY=2*DESLOCAMENTO;
+        cat.contSprite=0;
+        cat.spriteAtual=0;
+        cat.ativo=1;
+        cat.contDesloc=0;
+        cat.contBlocos=0;
+
+        //CHAVE
+        chave.ativo=1;
+        chave.posicaoX=2*DESLOCAMENTO;
         chave.posicaoY=5*DESLOCAMENTO;
         chave.contador=0;//0 =  nãopegou chave    e     1 = pegou chave
 
@@ -1725,9 +1760,9 @@ void initEtapa(int etapa){
         banana.posicaoY=2*DESLOCAMENTO;
 
         //Titulo da etapa
-        strcpy(backgroundAjuda.texto, "DESAFIO 1: ABRA A CASA 2");
+        strcpy(backgroundAjuda.texto, "DESAFIO 2: ABRA A CASA 2");
         break;
-    case 2:
+    case 3:
         // PERSONAGEM GATO
         cat.acao=RUN;
         cat.posicaoX=5*DESLOCAMENTO;
@@ -1750,7 +1785,7 @@ void initEtapa(int etapa){
         banana.posicaoY=5*DESLOCAMENTO;
 
         //Titulo da etapa
-        strcpy(backgroundAjuda.texto, "DESAFIO 2: ABRA A CASA 4");
+        strcpy(backgroundAjuda.texto, "DESAFIO 3: ABRA A CASA 4");
         break;
     }
 
@@ -1774,6 +1809,8 @@ void initEtapa(int etapa){
     PosicaoInicial.ativo=1;
     PosicaoInicial.posicaoX = cat.posicaoX+30;
     PosicaoInicial.posicaoY = cat.posicaoY+42;
+    //Objetivo Alcancado
+    ObjetivoAlcancado.ativo=0;
     //Variaveis GLOBAIS
     Linha = 0; // Indice do vetor de Instrucoes
     LinhaRepeticao=QTDE_LIN_ALGO+1; //armazena a localizacao da repeticao ativa
@@ -1798,7 +1835,7 @@ void telaAjuda(){
     }
 
     if(mouseClick(btnProxFase)){
-        if(etapaAtual<=2)etapaAtual++;
+        if(etapaAtual<=3)etapaAtual++;
         else etapaAtual=1;
 
         sentidoAtual=0;
@@ -2043,9 +2080,11 @@ int main(void){
         desenha = drawTelaJogo(&cat);
 
             //Detecta se Objetivo foi alcancado
-            if(((etapaAtual==1) && (strcmp(casa2.texto,"ABERTA")==0) && (Linha<=nInstrucao) ) ||
-               ((etapaAtual==2) && (strcmp(casa4.texto,"ABERTA")==0) && (Linha<=nInstrucao) )){
-                al_show_native_message_box(janela, "FIM ! ! !", "M U I T O    B E M ! ! !","VOCE ATINGIU SEU OBJETIVO ! ! !",NULL,ALLEGRO_MESSAGEBOX_WARN);
+            if(((etapaAtual==1) && (strcmp(casa1.texto,"ABERTA")==0) && (Linha<=nInstrucao) ) ||
+               ((etapaAtual==2) && (strcmp(casa2.texto,"ABERTA")==0) && (Linha<=nInstrucao) ) ||
+               ((etapaAtual==3) && (strcmp(casa4.texto,"ABERTA")==0) && (Linha<=nInstrucao) )){
+                ObjetivoAlcancado.ativo=1;
+                //al_show_native_message_box(janela, "FIM ! ! !", "M U I T O    B E M ! ! !","VOCE ATINGIU SEU OBJETIVO ! ! !",NULL,ALLEGRO_MESSAGEBOX_WARN);
                 Linha=nInstrucao+1;
             }
         }

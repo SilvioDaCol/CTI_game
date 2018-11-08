@@ -336,8 +336,8 @@ int initObjetos(){
         return 0;
     }
     ObjetivoAlcancado.ativo=0;
-    ObjetivoAlcancado.posicaoX=0*DESLOCAMENTO;
-    ObjetivoAlcancado.posicaoY=1*DESLOCAMENTO;
+    ObjetivoAlcancado.posicaoX=0;
+    ObjetivoAlcancado.posicaoY=0;
 
 
     //POSIÇÃO INICIAL
